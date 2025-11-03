@@ -217,7 +217,7 @@ function convertToElrc(lyricsJson){
         end = start + Number(s.duration);
       }
       const txt = (s.text==null)?'':String(s.text);
-      parts.push(`<${msToElrcTs(start)}><${msToElrcTs(end)}>${txt}`);
+      parts.push(`<${msToElrcTs(start)}>${txt}<${msToElrcTs(end)}>`);
     }
     if(parts.length===0){
       const fallback = (line.text==null)?'':String(line.text);
