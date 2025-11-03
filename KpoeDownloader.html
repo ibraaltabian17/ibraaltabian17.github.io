@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kpoe → eLRC Converter — Material 3</title>
+  <meta name="description" content="Simple Material-3 style page to fetch Lyrics+ JSON and convert to eLRC for karaoke" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --md-sys-primary: #6750a4;
+      --md-sys-on-primary: #ffffff;
+      --md-sys-surface: #f6f1ff;
+      --md-sys-on-surface: #1f1b24;
+      --md-sys-secondary: #625b71;
+      --md-sys-outline: rgba(16,16,20,0.08);
+      --surface-variant: #e9def8;
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 6px 18px rgba(99,95,125,0.08);
+      --shadow-md: 0 10px 30px rgba(99,95,125,0.12);
+
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color-scheme: light;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;background:linear-gradient(180deg,#fbf8ff 0%, #f3f2ff 100%);
+      color:var(--md-sys-on-surface);padding:32px;display:flex;align-items:flex-start;justify-content:center;
+    }
+
+    .container{width:100%;max-width:980px}
+
+    header{display:flex;gap:16px;align-items:center;margin-bottom:20px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--md-sys-primary),#8b6ed8);display:flex;align-items:center;justify-content:center;color:var(--md-sys-on-primary);font-weight:700;font-size:18px;box-shadow:var(--shadow-sm)}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--md-sys-secondary);font-size:13px}
+
+    .card{background:var(--md-sys-surface);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-md);}
+
+    form.grid{display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;color:var(--md-sys-secondary)}
+    input[type=text], input[type=number], textarea, select{
+      padding:10px 12px;border-radius:10px;border:1px solid var(--md-sys-outline);background:transparent;font-size:14px;color:var(--md-sys-on-surface);
+    }
+    textarea{min-height:120px;resize:vertical}
+
+    .actions{display:flex;gap:8px}
+    button{border:0;padding:10px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+    .btn-primary{background:var(--md-sys-primary);color:var(--md-sys-on-primary)}
+    .btn-ghost{background:transparent;border:1px solid var(--md-sys-outline)}
+
+    .preview{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .panel{background:var(--surface-variant);padding:12px;border-radius:12px;min-height:140px;overflow:auto;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;font-size:13px}
+    .panel h3{margin:0 0 8px 0;font-size:13px}
+
+    footer{margin-top:12px;color:var(--md-sys-secondary);font-size:13px}
+
+    .small{font-size:12px;color:var(--md-sys-secondary)}
+
+    @media (max-width:720px){
+      form.grid{grid-template-columns:1fr;}
+      .preview{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">K→E</div>
+      <div>
+        <h1>Kpoe → eLRC Converter</h1>
+        <p class="lead">Fetch Lyrics+ JSON, convert to eLRC (syllable-accurate). Pure HTML/JS/CSS — ready for GitHub Pages.</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <form id="form" class="grid" onsubmit="return false;">
+        <div>
+          <div class="field">
+            <label for="title">Title (required)</label>
+            <input id="title" type="text" placeholder="Song Title" required />
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <div style="flex:1">
+              <div class="field">
+                <label for="artist">Artist</label>
+                <input id="artist" type="text" placeholder="Artist Name" />
+              </div>
+            </div>
+            <div style="width:160px">
+              <div class="field">
+                <label for="duration">Duration (ms)</label>
+                <input id="duration" type="number" placeholder="210000" />
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px" class="actions">
+            <button id="btnFetch" class="btn-primary">Fetch & Convert</button>
+            <button id="btnCopy" class="btn-ghost" title="Copy eLRC to clipboard">Copy eLRC</button>
+            <button id="btnDownload" class="btn-ghost">Download .elrc</button>
+          </div>
+
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <input id="useUrl" type="checkbox" />
+            <label for="useUrl" class="small">Use direct Lyrics+ query URL</label>
+            <input id="directUrl" type="text" placeholder="https://lyrics-plus-backend.vercel.app/v2/lyrics/get?title=..." style="flex:1;margin-left:8px;" />
+          </div>
+
+        </div>
+
+        <div>
+          <div class="field">
+            <label for="rawJson">Raw JSON preview</label>
+            <textarea id="rawJson" readonly placeholder="JSON will appear here..."></textarea>
+          </div>
+        </div>
+      </form>
+
+      <div class="preview">
+        <div>
+          <div class="panel">
+            <h3>Generated eLRC</h3>
+            <pre id="elrcOut">[00:00.00]v1:&lt;00:00.00&gt;Example</pre>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h3>Notes</h3>
+            <div class="small">• Converter preserves syllable text exactly as provided by source (no strip, no extra spaces between syllables).<br>• eLRC format: <code>[MM:SS.hh]vSinger:&lt;MM:SS.hh&gt;syll&lt;MM:SS.hh&gt;syll...</code><br>• Tested with Lyrics+ endpoint. If CORS fails on your browser, use a simple proxy or run locally.</div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="small">Tips: gw ganteng.</div>
+      </footer>
+    </div>
+  </div>
+
+<script>
+// Helper: convert ms -> MM:SS.hh (hundredths)
+function msToElrcTs(ms){
+  ms = Number(ms)||0;
+  const sec = Math.floor(ms/1000);
+  const hundred = Math.floor((ms%1000)/10);
+  const min = Math.floor(sec/60);
+  const s = sec%60;
+  return String(min).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(hundred).padStart(2,'0');
+}
+
+async function fetchLyrics(url, params){
+  // if use direct URL, url param is direct
+  if (params.useDirect){
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('Fetch failed: '+resp.status);
+    return resp.json();
+  }
+  // else build query
+  const base = 'https://lyrics-plus-backend.vercel.app/v2/lyrics/get';
+  const q = new URL(base);
+  q.searchParams.set('title', params.title||'');
+  if(params.artist) q.searchParams.set('artist', params.artist);
+  if(params.album) q.searchParams.set('album', params.album);
+  if(params.duration) q.searchParams.set('duration', String(params.duration));
+  const resp = await fetch(q.toString());
+  if(!resp.ok) throw new Error('Fetch failed: '+resp.status);
+  return resp.json();
+}
+
+function convertToElrc(lyricsJson){
+  const lines = (lyricsJson && lyricsJson.lyrics) || [];
+  const out = [];
+  for(let i=0;i<lines.length;i++){
+    const line = lines[i]||{};
+    const lineTime = Number(line.time)||0;
+    const elrcLineTs = msToElrcTs(lineTime);
+    const el = line.element || {};
+    const singer = el.singer || 'v1';
+    const sylls = Array.isArray(line.syllabus)?line.syllabus:[];
+    const parts = [];
+    for(let j=0;j<sylls.length;j++){
+      const s = sylls[j]||{};
+      const t = Number(s.time)||0;
+      const txt = (s.text==null)?'':String(s.text);
+      const ts = msToElrcTs(t);
+      parts.push(`<${ts}>${txt}`);
+    }
+    if(parts.length===0){
+      const fallback = (line.text==null)?'':String(line.text);
+      parts.push(`<${msToElrcTs(lineTime)}>${fallback}`);
+    }
+    const joined = parts.join(''); 
+    out.push(`[${elrcLineTs}]${singer}:${joined}`);
+  }
+  return out.join('\n');
+}
+
+// UI wiring
+const btnFetch = document.getElementById('btnFetch');
+const btnCopy = document.getElementById('btnCopy');
+const btnDownload = document.getElementById('btnDownload');
+const titleIn = document.getElementById('title');
+const artistIn = document.getElementById('artist');
+const durationIn = document.getElementById('duration');
+const rawJsonArea = document.getElementById('rawJson');
+const elrcOut = document.getElementById('elrcOut');
+const useUrl = document.getElementById('useUrl');
+const directUrl = document.getElementById('directUrl');
+
+btnFetch.addEventListener('click', async ()=>{
+  btnFetch.disabled=true; btnFetch.textContent='Working...';
+  try{
+    const params = {
+      useDirect: useUrl.checked
+    };
+    let json;
+    if(useUrl.checked){
+      const d = directUrl.value.trim();
+      if(!d) throw new Error('Direct URL kosong');
+      json = await fetchLyrics(d, params);
+    } else {
+      params.title = titleIn.value.trim();
+      params.artist = artistIn.value.trim();
+      params.duration = durationIn.value?Number(durationIn.value):undefined;
+      if(!params.title) throw new Error('Title harus diisi');
+      json = await fetchLyrics(null, params);
+    }
+    rawJsonArea.value = JSON.stringify(json, null, 2);
+    const elrc = convertToElrc(json);
+    elrcOut.textContent = elrc || '[no lyrics]';
+  }catch(err){
+    rawJsonArea.value = ''; elrcOut.textContent = 'Error: '+err.message;
+  }finally{
+    btnFetch.disabled=false; btnFetch.textContent='Fetch & Convert';
+  }
+});
+
+btnCopy.addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(elrcOut.textContent);
+    btnCopy.textContent='Copied ✓';
+    setTimeout(()=>btnCopy.textContent='Copy eLRC',1200);
+  }catch(e){
+    btnCopy.textContent='Fail';
+    setTimeout(()=>btnCopy.textContent='Copy eLRC',1200);
+  }
+});
+
+btnDownload.addEventListener('click', ()=>{
+  const blob = new Blob([elrcOut.textContent||''],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (titleIn.value?titleIn.value.replace(/[^a-z0-9\-_\.]/gi,'_'):'lyrics') + '.elrc';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+// small UX: enter on title triggers fetch
+titleIn.addEventListener('keyup',(e)=>{if(e.key==='Enter') btnFetch.click();});
+
+</script>
+</body>
+</html>
