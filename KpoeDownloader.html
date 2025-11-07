@@ -3,292 +3,351 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kpoe → eLRC Converter — Material 3 (Responsive)</title>
-  <meta name="description" content="Simple Material-3 style page to fetch Lyrics+ JSON and convert to eLRC for karaoke. Mobile-first, responsive, single-file." />
+  <title>Kpoe → eLRC Converter</title>
+  <meta name="description" content="Convert Lyrics+ JSON to eLRC karaoke format. Responsive dark theme." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      /* Material 3-ish color system (customized) */
-      --md-sys-primary: #6750a4;
-      --md-sys-on-primary: #ffffff;
-      --md-sys-surface: #f6f1ff;
-      --md-sys-on-surface: #1f1b24;
-      --md-sys-secondary: #625b71;
-      --md-sys-outline: rgba(16,16,20,0.08);
-      --surface-variant: #e9def8;
-
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
-      --shadow-sm: 0 6px 18px rgba(99,95,125,0.08);
-      --shadow-md: 0 10px 30px rgba(99,95,125,0.12);
-
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    :root {
+      --primary: #90caf9;
+      --bg: #0a0f1a;
+      --surface: #111827;
+      --on-surface: #e0e7ff;
+      --border: rgba(255,255,255,0.08);
+      --radius: 12px;
+      --shadow: 0 6px 20px rgba(0,0,0,0.5);
+      font-family: 'Inter', sans-serif;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;background:linear-gradient(180deg,#fbf8ff 0%, #f3f2ff 100%);
-      color:var(--md-sys-on-surface);padding:18px;display:flex;align-items:flex-start;justify-content:center;font-size:15px;
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--on-surface);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
     }
 
-    .container{width:100%;max-width:980px}
-
-    header{display:flex;gap:12px;align-items:center;margin-bottom:16px}
-    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--md-sys-primary),#8b6ed8);display:flex;align-items:center;justify-content:center;color:var(--md-sys-on-primary);font-weight:700;font-size:18px;box-shadow:var(--shadow-sm)}
-    h1{font-size:18px;margin:0}
-    p.lead{margin:0;color:var(--md-sys-secondary);font-size:13px}
-
-    .card{background:var(--md-sys-surface);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow-md);}
-
-    /* form layout - mobile-first */
-    form.grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
-    .field{display:flex;flex-direction:column;gap:6px}
-    label{font-size:12px;color:var(--md-sys-secondary)}
-    input[type=text], input[type=number], textarea, select{
-      padding:10px 12px;border-radius:10px;border:1px solid var(--md-sys-outline);background:transparent;font-size:14px;color:var(--md-sys-on-surface);
-    }
-    textarea{min-height:120px;resize:vertical}
-
-    .actions{display:flex;flex-direction:column;gap:8px}
-    .row{display:flex;gap:8px}
-    button{border:0;padding:10px 12px;border-radius:10px;font-weight:600;cursor:pointer}
-    .btn-primary{background:var(--md-sys-primary);color:var(--md-sys-on-primary)}
-    .btn-ghost{background:transparent;border:1px solid var(--md-sys-outline)}
-
-    .preview{margin-top:12px;display:grid;grid-template-columns:1fr;gap:12px}
-    .panel{background:var(--surface-variant);padding:12px;border-radius:12px;min-height:120px;overflow:auto;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;font-size:13px}
-    .panel h3{margin:0 0 8px 0;font-size:13px}
-
-    footer{margin-top:12px;color:var(--md-sys-secondary);font-size:13px}
-
-    .note-ai{
-      border-left:4px solid #d9534f;background:rgba(217,83,79,0.06);padding:10px;border-radius:8px;color:#6b1d1d;margin-top:8px;font-size:13px
+    .wrapper {
+      width: 100%;
+      max-width: 980px;
+      background: var(--surface);
+      padding: 18px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
 
-    @media (min-width:720px){
-      body{padding:32px}
-      form.grid{grid-template-columns:1fr 320px}
-      .actions{flex-direction:row}
-      .preview{grid-template-columns:1fr 1fr}
+    h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+    p.desc { color: #9ca3af; font-size: 14px; margin-bottom: 12px; }
+
+    .grid { display: grid; gap: 10px; }
+    label { font-size: 13px; color: #a1a1aa; }
+    input, textarea, select {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--on-surface);
+      padding: 8px 10px;
+      font-size: 14px;
+      width: 100%;
+    }
+    textarea { resize: vertical; min-height: 120px; }
+
+    .btn { background: var(--primary); border: none; color: #000; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .muted { color: #9ca3af; font-size: 13px; }
+
+    .panel { background: #0f1724; border-radius: 8px; padding: 10px; overflow: auto; font-family: monospace; font-size: 13px; min-height: 100px; border:1px solid rgba(255,255,255,0.03) }
+
+    .row { display:flex; gap:8px; }
+    .row > * { flex:1 }
+
+    @media (min-width: 800px) {
+      .cols-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .row-compact { display:flex; gap:8px }
+      .row-compact > * { flex:1 }
     }
 
-    @media (max-width:420px){
-      .logo{width:44px;height:44px;font-size:16px}
-      h1{font-size:16px}
-      button{font-size:14px}
-    }
-
-    /* make buttons full width on small screens */
-    @media (max-width:720px){
-      .actions button{width:100%}
-    }
+    .small { padding:6px 8px; border-radius:8px; font-size:13px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo">K→E</div>
-      <div>
-        <h1>Kpoe → eLRC Converter</h1>
-        <p class="lead">Fetch Lyrics+ JSON, convert to eLRC (syllable-accurate). Single-file, responsive.</p>
+  <div class="wrapper">
+    <h1>Kpoe → eLRC Converter</h1>
+    <p class="desc">Convert Lyrics+ JSON to eLRC with syllable timing and optional background parts. This page includes a few built-in tests and local load / download features.</p>
+
+    <div class="grid">
+      <div class="row-compact">
+        <label style="flex:1">Title <input id="title" placeholder="Nasyid Gontor - TITIP" /></label>
+        <label style="width:160px">Duration (ms) <input id="duration" type="number" placeholder="210000" /></label>
       </div>
-    </header>
+      <label>Artist <input id="artist" placeholder="Nasyid Gontor" /></label>
+      <label>Direct URL (optional) <input id="url" placeholder="https://lyrics-plus-backend.vercel.app/v2/lyrics/get?..." /></label>
 
-    <div class="card">
-      <form id="form" class="grid" onsubmit="return false;">
-        <div>
-          <div class="field">
-            <label for="title">Title (required)</label>
-            <input id="title" type="text" placeholder="Nasyid Gontor - TITIP - Official Lyric Video" required />
-          </div>
+      <div class="row">
+        <button id="fetchBtn" class="btn">Fetch & Convert</button>
+        <button id="fetchTTMLBtn" class="btn small" title="Fetch TTML (v1/ttml/get)">Fetch TTML</button>
+        <button id="downloadTTMLBtn" class="btn small" title="Download last fetched TTML">Download TTML</button>
+        <button id="downloadElrcBtn" class="btn small" title="Download generated eLRC">Download eLRC</button>
+      </div>
 
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <div style="flex:1;min-width:160px">
-              <div class="field">
-                <label for="artist">Artist</label>
-                <input id="artist" type="text" placeholder="Nasyid Gontor" />
-              </div>
-            </div>
-            <div style="width:160px;min-width:120px">
-              <div class="field">
-                <label for="duration">Duration (ms)</label>
-                <input id="duration" type="number" placeholder="210000" />
-              </div>
-            </div>
-          </div>
-
-          <div class="actions" style="margin-top:12px">
-            <button id="btnFetch" class="btn-primary" type="button">Fetch & Convert</button>
-            <button id="btnCopy" class="btn-ghost" type="button" title="Copy eLRC to clipboard">Copy eLRC</button>
-            <button id="btnDownload" class="btn-ghost" type="button">Download .elrc</button>
-          </div>
-
-          <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:8px"><input id="useUrl" type="checkbox" /> <span class="small">Use direct Lyrics+ URL</span></label>
-            <input id="directUrl" type="text" placeholder="https://lyrics-plus-backend.vercel.app/v2/lyrics/get?title=..." style="flex:1;min-width:180px;margin-left:0" />
-          </div>
-
-        </div>
-
-        <div>
-          <div class="field">
-            <label for="rawJson">Raw JSON preview</label>
-            <textarea id="rawJson" readonly placeholder="JSON will appear here..."></textarea>
-          </div>
-        </div>
-      </form>
-
-      <div class="preview">
-        <div>
-          <div class="panel">
-            <h3>Generated eLRC</h3>
-            <pre id="elrcOut">[00:00.00]v1:&lt;00:00.00&gt;&lt;00:00.50&gt;Example</pre>
-          </div>
-        </div>
-        <div>
-          <div class="panel">
-            <h3>Notes & Warnings</h3>
-            <div style="margin-top:10px;font-size:13px;color:var(--md-sys-secondary)">
-              • Converter preserve syllable text exactly as provided by source (no strip, no extra spaces between syllables).<br>
-              • eLRC format: <code>[MM:SS.hh]vSinger:&lt;MM:SS.hh&gt;syll&lt;MM:SS.hh&gt;syll...</code><br>
-              • If browser blocks fetch due to CORS, run this page from a simple static server or use a proxy.
-            </div>
-          </div>
+      <div class="row" style="align-items:center;">
+        <label style="flex:1" title="Load a local Kpoe / Lyrics+ JSON file"><input id="fileInput" type="file" accept=".json,application/json" /></label>
+        <div style="width:160px">
+          <button id="sample1" class="btn small" type="button">Load Test 1</button>
+          <button id="sample2" class="btn small" type="button">Load Test 2</button>
         </div>
       </div>
 
-      <footer>
-        <div class="small">To deploy: simpan file ini sebagai <code>index.html</code> di repo GitHub dan aktifkan Pages (branch utama). Jangan langsung deploy untuk production tanpa verifikasi manual.</div>
-      </footer>
+      <div class="cols-2" style="margin-top:12px">
+        <div>
+          <label>Raw JSON Preview</label>
+          <textarea id="raw"></textarea>
+        </div>
+        <div>
+          <label>Generated eLRC</label>
+          <div class="panel" id="out">[00:00.00]v1:&lt;00:00.00&gt;Example&lt;00:00.50&gt;</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="muted">TTML Preview</label>
+        <div class="panel" id="ttmlPanel">No TTML fetched yet.</div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="muted">Tests output</label>
+        <div class="panel" id="tests">No tests run yet.</div>
+      </div>
     </div>
   </div>
 
-<script>
-// Helper: convert ms -> MM:SS.hh (hundredths)
-function msToElrcTs(ms){
-  ms = Number(ms)||0;
-  const sec = Math.floor(ms/1000);
-  const hundred = Math.floor((ms%1000)/10);
-  const min = Math.floor(sec/60);
-  const s = sec%60;
-  return String(min).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(hundred).padStart(2,'0');
-}
+  <script>
+    const titleEl = document.getElementById('title');
+    const artistEl = document.getElementById('artist');
+    const durEl = document.getElementById('duration');
+    const urlEl = document.getElementById('url');
+    const rawEl = document.getElementById('raw');
+    const outEl = document.getElementById('out');
+    const testsEl = document.getElementById('tests');
+    const ttmlPanel = document.getElementById('ttmlPanel');
 
-async function fetchLyrics(url, params){
-  if (params.useDirect){
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error('Fetch failed: '+resp.status);
-    return resp.json();
-  }
-  const base = 'https://lyrics-plus-backend.vercel.app/v2/lyrics/get';
-  const q = new URL(base);
-  q.searchParams.set('title', params.title||'');
-  if(params.artist) q.searchParams.set('artist', params.artist);
-  if(params.album) q.searchParams.set('album', params.album);
-  if(params.duration) q.searchParams.set('duration', String(params.duration));
-  const resp = await fetch(q.toString());
-  if(!resp.ok) throw new Error('Fetch failed: '+resp.status);
-  return resp.json();
-}
+    const fileInput = document.getElementById('fileInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const fetchTTMLBtn = document.getElementById('fetchTTMLBtn');
+    const downloadTTMLBtn = document.getElementById('downloadTTMLBtn');
+    const downloadElrcBtn = document.getElementById('downloadElrcBtn');
 
-function convertToElrc(lyricsJson){
-  const lines = (lyricsJson && lyricsJson.lyrics) || [];
-  const out = [];
-  for(let i=0;i<lines.length;i++){
-    const line = lines[i]||{};
-    const lineTime = Number(line.time)||0;
-    const elrcLineTs = msToElrcTs(lineTime);
-    const el = line.element || {};
-    const singer = el.singer || 'v1';
-    const sylls = Array.isArray(line.syllabus)?line.syllabus:[];
-    const parts = [];
-    for(let j=0;j<sylls.length;j++){
-      const s = sylls[j]||{};
-      const start = Number(s.time)||0;
-      // end: use next syllable start if available, else use start + duration if available, else fallback to start
-      let end = start;
-      if(j+1 < sylls.length && typeof sylls[j+1].time !== 'undefined'){
-        end = Number(sylls[j+1].time);
-      } else if (typeof s.duration !== 'undefined'){
-        end = start + Number(s.duration);
+    let lastJSON = null;
+    let lastELRC = '';
+    let lastTTML = '';
+
+    const msToTs = ms => {
+      ms = Number(ms)||0;
+      const sec = Math.floor(ms/1000), hund = Math.floor((ms%1000)/10), min = Math.floor(sec/60), s = sec%60;
+      return `${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hund).padStart(2,'0')}`;
+    };
+
+    async function fetchLyrics() {
+      const base = 'https://lyrics-plus-backend.vercel.app/v2/lyrics/get';
+      const url = urlEl.value.trim() || `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(res.statusText);
+      return res.json();
+    }
+
+    function convertToElrc(json){
+      if(!json || !Array.isArray(json.lyrics)) return '';
+      const lines = json.lyrics;
+      const out = [];
+      for(const line of lines){
+        const t = msToTs(line.time);
+        const s = (line.element && line.element.singer) ? line.element.singer : 'v1';
+        const sylls = Array.isArray(line.syllabus) ? line.syllabus : [];
+        const parts = [], bgParts = [];
+        for(let i=0;i<sylls.length;i++){
+          const cur = sylls[i] || {};
+          const nxt = sylls[i+1] || null;
+          const st = msToTs(cur.time);
+          const ed = msToTs(nxt ? nxt.time : (cur.time + (cur.duration||0)));
+          const seg = `<${st}>${cur.text}<${ed}>`;
+          if(cur.isBackground) bgParts.push(seg); else parts.push(seg);
+        }
+        const main = `[${t}]${s}:${parts.join('')}`;
+        out.push(main);
+        if(bgParts.length) out.push(`[bg:${bgParts.join('')}]`);
       }
-      const txt = (s.text==null)?'':String(s.text);
-      parts.push(`<${msToElrcTs(start)}>${txt}<${msToElrcTs(end)}>`);
+      return out.join('\n');
     }
-    if(parts.length===0){
-      const fallback = (line.text==null)?'':String(line.text);
-      parts.push(`<${msToElrcTs(lineTime)}><${msToElrcTs(lineTime+ (line.duration||0))}>${fallback}`);
+
+    // --- file input: load local JSON ---
+    fileInput.addEventListener('change', async (ev)=>{
+      const f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      try {
+        const txt = await f.text();
+        const json = JSON.parse(txt);
+        lastJSON = json;
+        rawEl.value = JSON.stringify(json, null, 2);
+        lastELRC = convertToElrc(json);
+        outEl.textContent = lastELRC || '[no lyrics produced]';
+        ttmlPanel.textContent = 'No TTML fetched for local file (use Fetch TTML).';
+      } catch(e) {
+        outEl.textContent = 'Error parsing local JSON: ' + e.message;
+      }
+    });
+
+    // --- TTML fetch & download ---
+    async function fetchTTML() {
+      // base TTML endpoint per instruksi: v1/ttml/get
+      const base = 'https://lyrics-plus-backend.vercel.app/v1/ttml/get';
+      const url = urlEl.value.trim() || `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(res.statusText);
+      const j = await res.json();
+      if(!j || typeof j.ttml !== 'string') throw new Error('Invalid TTML response');
+      lastTTML = j.ttml;
+      ttmlPanel.textContent = lastTTML.substring(0, 2000) + (lastTTML.length>2000 ? '\n\n... (truncated)' : '');
+      return lastTTML;
     }
-    const joined = parts.join('');
-    out.push(`[${elrcLineTs}]${singer}:${joined}`);
-  }
-  return out.join('\n');
-}
 
-// UI wiring
-const btnFetch = document.getElementById('btnFetch');
-const btnCopy = document.getElementById('btnCopy');
-const btnDownload = document.getElementById('btnDownload');
-const titleIn = document.getElementById('title');
-const artistIn = document.getElementById('artist');
-const durationIn = document.getElementById('duration');
-const rawJsonArea = document.getElementById('rawJson');
-const elrcOut = document.getElementById('elrcOut');
-const useUrl = document.getElementById('useUrl');
-const directUrl = document.getElementById('directUrl');
-
-btnFetch.addEventListener('click', async ()=>{
-  btnFetch.disabled=true; btnFetch.textContent='Working...';
-  try{
-    const params = { useDirect: useUrl.checked };
-    let json;
-    if(useUrl.checked){
-      const d = directUrl.value.trim();
-      if(!d) throw new Error('Direct URL kosong');
-      json = await fetchLyrics(d, params);
-    } else {
-      params.title = titleIn.value.trim();
-      params.artist = artistIn.value.trim();
-      params.duration = durationIn.value?Number(durationIn.value):undefined;
-      if(!params.title) throw new Error('Title harus diisi');
-      json = await fetchLyrics(null, params);
+    async function downloadTextAsFile(text, filename, mime='text/plain;charset=utf-8') {
+      const blob = new Blob([text], {type: mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     }
-    rawJsonArea.value = JSON.stringify(json, null, 2);
-    const elrc = convertToElrc(json);
-    elrcOut.textContent = elrc || '[no lyrics]';
-  }catch(err){
-    rawJsonArea.value = ''; elrcOut.textContent = 'Error: '+err.message;
-  }finally{
-    btnFetch.disabled=false; btnFetch.textContent='Fetch & Convert';
-  }
-});
 
-btnCopy.addEventListener('click', async ()=>{
-  try{
-    await navigator.clipboard.writeText(elrcOut.textContent);
-    btnCopy.textContent='Copied ✓';
-    setTimeout(()=>btnCopy.textContent='Copy eLRC',1200);
-  }catch(e){
-    btnCopy.textContent='Fail';
-    setTimeout(()=>btnCopy.textContent='Copy eLRC',1200);
-  }
-});
+    fetchBtn.addEventListener('click', async ()=>{
+      outEl.textContent = 'Loading...';
+      try {
+        const json = await fetchLyrics();
+        lastJSON = json;
+        rawEl.value = JSON.stringify(json, null, 2);
+        lastELRC = convertToElrc(json);
+        outEl.textContent = lastELRC || '[no lyrics produced]';
+      } catch(e) {
+        outEl.textContent = 'Error: '+e.message;
+      }
+    });
 
-btnDownload.addEventListener('click', ()=>{
-  const blob = new Blob([elrcOut.textContent||''],{type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (titleIn.value?titleIn.value.replace(/[^a-z0-9\-_\.]/gi,'_'):'lyrics') + '.elrc';
-  document.body.appendChild(a); a.click(); a.remove();
-});
+    fetchTTMLBtn.addEventListener('click', async ()=>{
+      ttmlPanel.textContent = 'Fetching TTML...';
+      try {
+        const t = await fetchTTML();
+        ttmlPanel.textContent = t.substring(0, 2000) + (t.length>2000 ? '\n\n... (truncated)': '');
+      } catch(e) {
+        ttmlPanel.textContent = 'Error fetching TTML: ' + e.message + '\n\nNote: endpoint may enforce CORS or require exact params.';
+      }
+    });
 
-// quick submit
-titleIn.addEventListener('keyup',(e)=>{if(e.key==='Enter') btnFetch.click();});
+    downloadTTMLBtn.addEventListener('click', async ()=>{
+      if(!lastTTML){
+        // try auto-fetch once
+        try {
+          await fetchTTML();
+        } catch(e) {
+          alert('Gagal fetch TTML: ' + e.message + '\nCoba cek CORS atau URL.');
+          return;
+        }
+      }
+      if(lastTTML) {
+        downloadTextAsFile(lastTTML, (titleEl.value || 'lyrics') + '.ttml', 'application/xml;charset=utf-8');
+      } else {
+        alert('No TTML available to download.');
+      }
+    });
 
-</script>
+    downloadElrcBtn.addEventListener('click', ()=>{
+      if(!lastELRC){
+        // try to build from current raw textarea if any
+        try {
+          const parsed = JSON.parse(rawEl.value);
+          lastELRC = convertToElrc(parsed);
+        } catch(e){}
+      }
+      if(lastELRC) {
+        downloadTextAsFile(lastELRC, (titleEl.value || 'lyrics') + '.lrc', 'text/plain;charset=utf-8');
+      } else {
+        alert('No eLRC content to download.');
+      }
+    });
+
+    // --- Test cases (same as before) ---
+    const SAMPLE_1 = {
+      "lyrics": [
+        {
+          "time": 0,
+          "duration": 5000,
+          "text": "Example",
+          "syllabus": [
+            {"time": 0, "duration": 500, "text": "Ex"},
+            {"time": 500, "duration": 500, "text": "am"},
+            {"time": 1000, "duration": 4000, "text": "ple"}
+          ],
+          "element": {"singer":"v1"}
+        }
+      ]
+    };
+
+    const SAMPLE_2 = {
+      "lyrics": [
+        {
+          "time": 120016,
+          "duration": 2000,
+          "text": "lanwasahlan",
+          "syllabus": [
+            {"time": 120016, "duration": 359, "text": "Ah"},
+            {"time": 120375, "duration": 295, "text": "lan "},
+            {"time": 120670, "duration": 513, "text": "wa "},
+            {"time": 121183, "duration": 531, "text": "sah"},
+            {"time": 121714, "duration": 1477, "text": "lan "},
+            {"time": 121958, "duration": 392, "text": "(Ah", "isBackground": true},
+            {"time": 122350, "duration": 289, "text": "lan ", "isBackground": true},
+            {"time": 122639, "duration": 551, "text": "wa ", "isBackground": true},
+            {"time": 123190, "duration": 516, "text": "Sah", "isBackground": true},
+            {"time": 123706, "duration": 1734, "text": "lan)", "isBackground": true}
+          ],
+          "element": {"singer":"v1","songPart":"CHORUS"}
+        }
+      ]
+    };
+
+    function runTests(){
+      const res1 = convertToElrc(SAMPLE_1);
+      const expect1 = "[00:00.00]v1:<00:00.00>Ex<00:00.50><00:00.50>am<00:01.00><00:01.00>ple<00:05.00>";
+      const pass1 = res1.trim() === expect1.trim();
+
+      const res2 = convertToElrc(SAMPLE_2);
+      // Expect that bg parts produce a [bg:...] line after the main line
+      const pass2 = res2.includes('[bg:') && res2.includes('<02:03.706>');
+
+      testsEl.textContent = 'Test 1: ' + (pass1 ? 'PASS' : 'FAIL') + '\n\n' + res1 + '\n\n' +
+                            'Expected 1:\n' + expect1 + '\n\n' +
+                            'Test 2: ' + (pass2 ? 'PASS' : 'FAIL') + '\n\n' + res2;
+    }
+
+    document.getElementById('sample1').addEventListener('click', ()=>{
+      rawEl.value = JSON.stringify(SAMPLE_1, null, 2);
+      lastJSON = SAMPLE_1;
+      lastELRC = convertToElrc(SAMPLE_1);
+      outEl.textContent = lastELRC;
+    });
+    document.getElementById('sample2').addEventListener('click', ()=>{
+      rawEl.value = JSON.stringify(SAMPLE_2, null, 2);
+      lastJSON = SAMPLE_2;
+      lastELRC = convertToElrc(SAMPLE_2);
+      outEl.textContent = lastELRC;
+    });
+
+    // run tests automatically on load
+    setTimeout(runTests, 200);
+  </script>
 </body>
 </html>
