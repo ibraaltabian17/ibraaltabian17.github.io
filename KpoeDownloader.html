@@ -181,16 +181,140 @@
       return out.join('\n');
     }
 
-    // --- file input: load local JSON ---
+    // --- v1 to v2 converter (from your snippet, cleaned) ---
+    function v1Tov2(data) {
+      const groupedLyrics = [];
+      let currentGroup = null;
+
+      // Check if isLineEnding is used for grouping in Word/Syllable types
+      const usesLineEndingForGrouping = data.type !== "Line" && data.lyrics.some(segment => segment.isLineEnding === 1);
+
+      if (data.type === "Line" || !usesLineEndingForGrouping) {
+        // For Line type, or Word/Syllable type where isLineEnding is not used for grouping,
+        // each segment is considered a complete line.
+        data.lyrics.forEach(segment => {
+          const lineItem = {
+            time: segment.time,
+            duration: segment.duration,
+            text: segment.text,
+            syllabus: segment.syllabus || [],
+            element: segment.element || { key: "", songPart: "", singer: "" }
+          };
+          if ((data.type === "Word" || data.type === "Syllable") && !lineItem.syllabus.length && lineItem.text) {
+            lineItem.syllabus = [{
+              time: segment.time,
+              duration: segment.duration,
+              text: segment.text
+            }];
+          }
+          groupedLyrics.push(lineItem);
+        });
+      } else {
+        // For Word or Syllable types where isLineEnding is used for grouping
+        data.lyrics.forEach(segment => {
+          if (!currentGroup) {
+            currentGroup = {
+              time: segment.time,
+              duration: 0,
+              text: "",
+              syllabus: [],
+              element: segment.element || { key: "", songPart: "", singer: "" }
+            };
+          }
+
+          currentGroup.text += segment.text;
+
+          const syllabusEntry = {
+            time: segment.time,
+            duration: segment.duration,
+            text: segment.text
+          };
+
+          if (segment.element && segment.element.isBackground === true) {
+            syllabusEntry.isBackground = true;
+          }
+
+          currentGroup.syllabus.push(syllabusEntry);
+
+          if (segment.isLineEnding === 1) {
+            let earliestTime = Infinity;
+            let latestEndTime = 0;
+
+            currentGroup.syllabus.forEach(syllable => {
+              if (syllable.time < earliestTime) {
+                earliestTime = syllable.time;
+              }
+              const endTime = syllable.time + syllable.duration;
+              if (endTime > latestEndTime) {
+                latestEndTime = endTime;
+              }
+            });
+
+            currentGroup.time = earliestTime;
+            currentGroup.duration = latestEndTime - earliestTime;
+            currentGroup.text = currentGroup.text.trim();
+            groupedLyrics.push(currentGroup);
+            currentGroup = null;
+          }
+        });
+
+        if (currentGroup) { // Handle any remaining group if file ends without isLineEnding=1
+          let earliestTime = Infinity;
+          let latestEndTime = 0;
+
+          currentGroup.syllabus.forEach(syllable => {
+            if (syllable.time < earliestTime) {
+              earliestTime = syllable.time;
+            }
+            const endTime = syllable.time + syllable.duration;
+            if (endTime > latestEndTime) {
+              latestEndTime = endTime;
+            }
+          });
+
+          currentGroup.time = earliestTime;
+          currentGroup.duration = latestEndTime - earliestTime;
+          currentGroup.text = currentGroup.text.trim();
+          groupedLyrics.push(currentGroup);
+        }
+      }
+
+      return {
+        type: data.type === "syllable" ? "Word" : data.type,
+        KpoeTools: '1.31R2-LPlusBcknd,' + (data.KpoeTools || 'UnknownV1'),
+        metadata: data.metadata,
+        ignoreSponsorblock: data.ignoreSponsorblock || undefined,
+        lyrics: groupedLyrics,
+        cached: data.cached || 'None'
+      };
+    }
+
+    // --- file input: load local JSON with auto-conversion for old v1 files ---
     fileInput.addEventListener('change', async (ev)=>{
       const f = ev.target.files && ev.target.files[0];
       if(!f) return;
       try {
         const txt = await f.text();
-        const json = JSON.parse(txt);
-        lastJSON = json;
-        rawEl.value = JSON.stringify(json, null, 2);
-        lastELRC = convertToElrc(json);
+        let parsedLyrics = JSON.parse(txt);
+
+        // Detect older V1 JSON (no KpoeTools) but uses isLineEnding for grouping
+        if (parsedLyrics
+            && !parsedLyrics.KpoeTools
+            && parsedLyrics.lyrics
+            && parsedLyrics.lyrics.length > 0
+            && parsedLyrics.lyrics[0].isLineEnding !== undefined) {
+          console.log("Converting older V1 JSON (no KpoeTools) to V2 format.");
+          try {
+            parsedLyrics = v1Tov2(parsedLyrics);
+          } catch(convErr) {
+            console.warn('v1->v2 conversion failed:', convErr);
+            // if conversion fails, we still try to continue with original parsedLyrics
+          }
+        }
+
+        lastJSON = parsedLyrics;
+        rawEl.value = JSON.stringify(parsedLyrics, null, 2);
+        lastELRC = convertToElrc(parsedLyrics);
         outEl.textContent = lastELRC || '[no lyrics produced]';
         ttmlPanel.textContent = 'No TTML fetched for local file (use Fetch TTML).';
       } catch(e) {
@@ -200,7 +324,6 @@
 
     // --- TTML fetch & download ---
     async function fetchTTML() {
-      // base TTML endpoint per instruksi: v1/ttml/get
       const base = 'https://lyrics-plus-backend.vercel.app/v1/ttml/get';
       const url = urlEl.value.trim() || `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
       const res = await fetch(url);
@@ -249,7 +372,6 @@
 
     downloadTTMLBtn.addEventListener('click', async ()=>{
       if(!lastTTML){
-        // try auto-fetch once
         try {
           await fetchTTML();
         } catch(e) {
@@ -266,7 +388,6 @@
 
     downloadElrcBtn.addEventListener('click', ()=>{
       if(!lastELRC){
-        // try to build from current raw textarea if any
         try {
           const parsed = JSON.parse(rawEl.value);
           lastELRC = convertToElrc(parsed);
@@ -325,7 +446,6 @@
       const pass1 = res1.trim() === expect1.trim();
 
       const res2 = convertToElrc(SAMPLE_2);
-      // Expect that bg parts produce a [bg:...] line after the main line
       const pass2 = res2.includes('[bg:') && res2.includes('<02:03.706>');
 
       testsEl.textContent = 'Test 1: ' + (pass1 ? 'PASS' : 'FAIL') + '\n\n' + res1 + '\n\n' +
