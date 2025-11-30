@@ -1,129 +1,416 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kpoe → eLRC Converter</title>
-  <meta name="description" content="Convert Lyrics+ JSON to eLRC karaoke format. Responsive dark theme." />
+  <meta name="description" content="Convert Lyrics+ JSON to eLRC karaoke format. Material Design 3 Interface." />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
   <style>
+
     :root {
-      --primary: #90caf9;
-      --bg: #0a0f1a;
-      --surface: #111827;
-      --on-surface: #e0e7ff;
-      --border: rgba(255,255,255,0.08);
-      --radius: 12px;
-      --shadow: 0 6px 20px rgba(0,0,0,0.5);
-      font-family: 'Inter', sans-serif;
+      --md-sys-color-background: #141218;
+      --md-sys-color-surface: #1D1B20;
+      --md-sys-color-surface-container: #211F26;
+      --md-sys-color-primary: #D0BCFF;
+      --md-sys-color-on-primary: #381E72;
+      --md-sys-color-secondary-container: #4A4458;
+      --md-sys-color-on-secondary-container: #E8DEF8;
+      --md-sys-color-outline: #938F99;
+      --md-sys-color-on-surface: #E6E1E5;
+      --md-sys-color-on-surface-variant: #CAC4D0;
+      --md-sys-color-error: #F2B8B5;
+
+      --md-sys-shape-corner-extra-small: 4px;
+      --md-sys-shape-corner-medium: 12px;
+      --md-sys-shape-corner-large: 16px;
+      --md-sys-shape-corner-full: 9999px;
+
+      --md-ref-typeface-brand: 'Roboto', sans-serif;
     }
 
     * { box-sizing: border-box; }
+
     body {
-      background: var(--bg);
-      color: var(--on-surface);
+      background-color: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-surface);
+      font-family: var(--md-ref-typeface-brand);
       margin: 0;
+      padding: 0;
       display: flex;
       justify-content: center;
-      padding: 20px;
+      min-height: 100vh;
     }
 
-    .wrapper {
+    .app-container {
       width: 100%;
-      max-width: 980px;
-      background: var(--surface);
-      padding: 18px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      max-width: 1200px;
+      padding: 24px;
+      display: grid;
+      gap: 24px;
     }
 
-    h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
-    p.desc { color: #9ca3af; font-size: 14px; margin-bottom: 12px; }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+    }
 
-    .grid { display: grid; gap: 10px; }
-    label { font-size: 13px; color: #a1a1aa; }
-    input, textarea, select {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--on-surface);
-      padding: 8px 10px;
+    p.subtitle {
+      margin: 8px 0 24px 0;
       font-size: 14px;
+      color: var(--md-sys-color-on-surface-variant);
+      line-height: 1.5;
+    }
+
+    .card {
+      background-color: var(--md-sys-color-surface-container);
+      border-radius: var(--md-sys-shape-corner-large);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media(min-width: 600px) {
+      .input-row { grid-template-columns: 1fr 1fr; }
+      .input-row.with-small { grid-template-columns: 2fr 1fr; }
+    }
+
+    input, select, textarea {
       width: 100%;
-    }
-    textarea { resize: vertical; min-height: 120px; }
-
-    .btn { background: var(--primary); border: none; color: #000; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .muted { color: #9ca3af; font-size: 13px; }
-
-    .panel { background: #0f1724; border-radius: 8px; padding: 10px; overflow: auto; font-family: monospace; font-size: 13px; min-height: 100px; border:1px solid rgba(255,255,255,0.03) }
-
-    .row { display:flex; gap:8px; }
-    .row > * { flex:1 }
-
-    @media (min-width: 800px) {
-      .cols-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .row-compact { display:flex; gap:8px }
-      .row-compact > * { flex:1 }
+      background: transparent;
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 4px;
+      padding: 16px 16px 16px 16px;
+      color: var(--md-sys-color-on-surface);
+      font-family: inherit;
+      font-size: 16px;
+      transition: border-color 0.2s;
+      outline: none;
     }
 
-    .small { padding:6px 8px; border-radius:8px; font-size:13px; }
+    input:focus, textarea:focus {
+      border-color: var(--md-sys-color-primary);
+      border-width: 2px;
+      padding: 15px 15px 15px 15px; 
+    }
+
+    label {
+      position: absolute;
+      left: 14px;
+      top: 16px;
+      background-color: var(--md-sys-color-surface-container);
+      padding: 0 4px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 16px;
+      transition: 0.2s ease all;
+      pointer-events: none;
+    }
+
+    input:focus ~ label,
+    input:not(:placeholder-shown) ~ label,
+    textarea:focus ~ label,
+    textarea:not(:placeholder-shown) ~ label {
+      top: -10px;
+      font-size: 12px;
+      color: var(--md-sys-color-primary);
+      font-weight: 500;
+    }
+
+    .btn-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      height: 40px;
+      border-radius: var(--md-sys-shape-corner-full);
+      padding: 0 24px;
+      font-family: var(--md-ref-typeface-brand);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary {
+      background-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      opacity: 0.9;
+    }
+
+    .btn-tonal {
+      background-color: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+    }
+    .btn-tonal:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-outlined {
+      background: transparent;
+      border: 1px solid var(--md-sys-color-outline);
+      color: var(--md-sys-color-primary);
+    }
+    .btn-outlined:hover {
+      background: rgba(208, 188, 255, 0.08);
+    }
+
+    .btn-icon {
+      padding: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--md-sys-color-on-surface-variant);
+      border: none;
+      cursor: pointer;
+    }
+    .btn-icon:hover {
+      background-color: rgba(255,255,255,0.08);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--md-sys-color-outline);
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 12px 16px;
+      cursor: pointer;
+      color: var(--md-sys-color-on-surface-variant);
+      font-weight: 500;
+      font-size: 14px;
+      border-bottom: 2px solid transparent;
+      transition: 0.2s;
+    }
+    .tab.active {
+      color: var(--md-sys-color-primary);
+      border-bottom-color: var(--md-sys-color-primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    .output-area {
+      width: 100%;
+      min-height: 300px;
+      background-color: #000000;
+      color: #b0b0b0;
+      font-family: 'Courier New', monospace;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      white-space: pre-wrap;
+      overflow-y: auto;
+      font-size: 13px;
+      position: relative;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--md-sys-color-on-surface);
+      color: var(--md-sys-color-surface);
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
+
+    svg { fill: currentColor; width: 20px; height: 20px; }
+
   </style>
 </head>
 <body>
-  <div class="wrapper">
+
+<div class="app-container">
+
+  <div style="margin-bottom: 8px;">
     <h1>Kpoe → eLRC Converter</h1>
-    <p class="desc">Convert Lyrics+ JSON to eLRC with syllable timing and optional background parts. This page includes a few built-in tests and local load / download features.</p>
+    <p class="subtitle">Convert Lyrics+ JSON to eLRC with syllable timing, background parts, and V1 support.</p>
+  </div>
 
-    <div class="grid">
-      <div class="row-compact">
-        <label style="flex:1">Title <input id="title" placeholder="Nasyid Gontor - TITIP" /></label>
-        <label style="width:160px">Duration (ms) <input id="duration" type="number" placeholder="210000" /></label>
+  <div class="card">
+    <div class="input-row with-small">
+      <div class="input-group">
+        <input id="title" placeholder=" " />
+        <label for="title">Song Title</label>
       </div>
-      <label>Artist <input id="artist" placeholder="Nasyid Gontor" /></label>
-      <label>Direct URL (optional) <input id="url" placeholder="https://lyrics-plus-backend.vercel.app/v2/lyrics/get?..." /></label>
+      <div class="input-group">
+        <input id="duration" type="number" placeholder=" " />
+        <label for="duration">Duration (ms)</label>
+      </div>
+    </div>
 
-      <div class="row">
-        <button id="fetchBtn" class="btn">Fetch & Convert</button>
-        <button id="fetchTTMLBtn" class="btn small" title="Fetch TTML (v1/ttml/get)">Fetch TTML</button>
-        <button id="downloadTTMLBtn" class="btn small" title="Download last fetched TTML">Download TTML</button>
-        <button id="downloadElrcBtn" class="btn small" title="Download generated eLRC">Download eLRC</button>
+    <div class="input-row">
+      <div class="input-group">
+        <input id="artist" placeholder=" " />
+        <label for="artist">Artist</label>
       </div>
+      <div class="input-group">
+        <input id="url" placeholder=" " />
+        <label for="url">Direct API URL (Optional)</label>
+      </div>
+    </div>
 
-      <div class="row" style="align-items:center;">
-        <label style="flex:1" title="Load a local Kpoe / Lyrics+ JSON file"><input id="fileInput" type="file" accept=".json,application/json" /></label>
-        <div style="width:160px">
-          <button id="sample1" class="btn small" type="button">Load Test 1</button>
-          <button id="sample2" class="btn small" type="button">Load Test 2</button>
-        </div>
-      </div>
+    <div class="btn-container">
+      <button id="fetchBtn" class="btn btn-primary">
+        <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.5-9.11 0-12.58 3.51-3.47 9.21-3.47 12.72 0l2.72-2.81v7.12zM12.5 8v4.25l3.5 2.08-.72 1.28L11 13V8h1.5z"/></svg>
+        Fetch & Convert
+      </button>
 
-      <div class="cols-2" style="margin-top:12px">
-        <div>
-          <label>Raw JSON Preview</label>
-          <textarea id="raw"></textarea>
-        </div>
-        <div>
-          <label>Generated eLRC</label>
-          <div class="panel" id="out">[00:00.00]v1:&lt;00:00.00&gt;Example&lt;00:00.50&gt;</div>
-        </div>
-      </div>
+      <button id="fetchTTMLBtn" class="btn btn-tonal">Fetch TTML</button>
 
-      <div style="margin-top:10px">
-        <label class="muted">TTML Preview</label>
-        <div class="panel" id="ttmlPanel">No TTML fetched yet.</div>
-      </div>
+      <span style="flex:1"></span> 
 
-      <div style="margin-top:10px">
-        <label class="muted">Tests output</label>
-        <div class="panel" id="tests">No tests run yet.</div>
-      </div>
+      <label class="btn btn-outlined">
+        <svg viewBox="0 0 24 24" style="margin-right:8px"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+        Load Local JSON
+        <input id="fileInput" type="file" accept=".json,application/json" />
+      </label>
+
+      <button id="sample1" class="btn btn-outlined small">Test 1</button>
+      <button id="sample2" class="btn btn-outlined small">Test 2</button>
     </div>
   </div>
 
-  <script>
+  <div class="card">
+
+    <div class="tabs">
+      <div class="tab active" data-target="tab-elrc">Generated eLRC</div>
+      <div class="tab" data-target="tab-json">Raw JSON</div>
+      <div class="tab" data-target="tab-ttml">TTML XML</div>
+      <div class="tab" data-target="tab-tests">Logs/Tests</div>
+    </div>
+
+    <div id="tab-elrc" class="tab-content active">
+      <div class="output-header">
+        <div class="btn-container">
+            <button id="downloadElrcBtn" class="btn btn-tonal">
+                <svg viewBox="0 0 24 24" style="margin-right:8px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download .lrc
+            </button>
+        </div>
+        <button id="copyElrcBtn" class="btn btn-icon" title="Copy to Clipboard">
+            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </button>
+      </div>
+      <textarea id="out" class="output-area" readonly placeholder="Result will appear here..."></textarea>
+    </div>
+
+    <div id="tab-json" class="tab-content">
+      <div class="output-header">
+         <span style="color:var(--md-sys-color-on-surface-variant); font-size:14px">Debug view for loaded JSON</span>
+         <button id="copyJsonBtn" class="btn btn-icon" title="Copy JSON">
+            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </button>
+      </div>
+      <textarea id="raw" class="output-area"></textarea>
+    </div>
+
+    <div id="tab-ttml" class="tab-content">
+      <div class="output-header">
+        <button id="downloadTTMLBtn" class="btn btn-tonal">Download .ttml</button>
+      </div>
+      <textarea id="ttmlPanel" class="output-area" placeholder="No TTML fetched yet."></textarea>
+    </div>
+
+    <div id="tab-tests" class="tab-content">
+      <textarea id="tests" class="output-area" placeholder="Tests output..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">Copied to clipboard!</div>
+
+<script>
+    // --- UI Logic: Tabs & Toast ---
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            // Add active
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.target).classList.add('active');
+        });
+    });
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    async function copyToClipboard(elemId) {
+        const el = document.getElementById(elemId);
+        if(!el || !el.value) return;
+        try {
+            await navigator.clipboard.writeText(el.value);
+            showToast('Copied to clipboard!');
+        } catch (err) {
+            showToast('Failed to copy');
+        }
+    }
+
+    // --- Core Logic (Preserved) ---
     const titleEl = document.getElementById('title');
     const artistEl = document.getElementById('artist');
     const durEl = document.getElementById('duration');
@@ -138,6 +425,10 @@
     const fetchTTMLBtn = document.getElementById('fetchTTMLBtn');
     const downloadTTMLBtn = document.getElementById('downloadTTMLBtn');
     const downloadElrcBtn = document.getElementById('downloadElrcBtn');
+
+    // Copy Buttons
+    document.getElementById('copyElrcBtn').addEventListener('click', () => copyToClipboard('out'));
+    document.getElementById('copyJsonBtn').addEventListener('click', () => copyToClipboard('raw'));
 
     let lastJSON = null;
     let lastELRC = '';
@@ -181,7 +472,7 @@
       return out.join('\n');
     }
 
-    // --- v1 to v2 converter (from your snippet, cleaned) ---
+    // --- v1 to v2 converter ---
     function v1Tov2(data) {
       const groupedLyrics = [];
       let currentGroup = null;
@@ -190,8 +481,6 @@
       const usesLineEndingForGrouping = data.type !== "Line" && data.lyrics.some(segment => segment.isLineEnding === 1);
 
       if (data.type === "Line" || !usesLineEndingForGrouping) {
-        // For Line type, or Word/Syllable type where isLineEnding is not used for grouping,
-        // each segment is considered a complete line.
         data.lyrics.forEach(segment => {
           const lineItem = {
             time: segment.time,
@@ -210,7 +499,6 @@
           groupedLyrics.push(lineItem);
         });
       } else {
-        // For Word or Syllable types where isLineEnding is used for grouping
         data.lyrics.forEach(segment => {
           if (!currentGroup) {
             currentGroup = {
@@ -258,7 +546,7 @@
           }
         });
 
-        if (currentGroup) { // Handle any remaining group if file ends without isLineEnding=1
+        if (currentGroup) { 
           let earliestTime = Infinity;
           let latestEndTime = 0;
 
@@ -289,7 +577,7 @@
       };
     }
 
-    // --- file input: load local JSON with auto-conversion for old v1 files ---
+    // --- file input ---
     fileInput.addEventListener('change', async (ev)=>{
       const f = ev.target.files && ev.target.files[0];
       if(!f) return;
@@ -297,7 +585,6 @@
         const txt = await f.text();
         let parsedLyrics = JSON.parse(txt);
 
-        // Detect older V1 JSON (no KpoeTools) but uses isLineEnding for grouping
         if (parsedLyrics
             && !parsedLyrics.KpoeTools
             && parsedLyrics.lyrics
@@ -308,17 +595,19 @@
             parsedLyrics = v1Tov2(parsedLyrics);
           } catch(convErr) {
             console.warn('v1->v2 conversion failed:', convErr);
-            // if conversion fails, we still try to continue with original parsedLyrics
           }
         }
 
         lastJSON = parsedLyrics;
         rawEl.value = JSON.stringify(parsedLyrics, null, 2);
         lastELRC = convertToElrc(parsedLyrics);
-        outEl.textContent = lastELRC || '[no lyrics produced]';
-        ttmlPanel.textContent = 'No TTML fetched for local file (use Fetch TTML).';
+        outEl.value = lastELRC || '[no lyrics produced]'; // Use .value for textarea
+        ttmlPanel.value = 'No TTML fetched for local file (use Fetch TTML).';
+
+        // Auto-switch to eLRC tab
+        document.querySelector('.tab[data-target="tab-elrc"]').click();
       } catch(e) {
-        outEl.textContent = 'Error parsing local JSON: ' + e.message;
+        outEl.value = 'Error parsing local JSON: ' + e.message;
       }
     });
 
@@ -331,7 +620,7 @@
       const j = await res.json();
       if(!j || typeof j.ttml !== 'string') throw new Error('Invalid TTML response');
       lastTTML = j.ttml;
-      ttmlPanel.textContent = lastTTML.substring(0, 2000) + (lastTTML.length>2000 ? '\n\n... (truncated)' : '');
+      ttmlPanel.value = lastTTML;
       return lastTTML;
     }
 
@@ -348,25 +637,27 @@
     }
 
     fetchBtn.addEventListener('click', async ()=>{
-      outEl.textContent = 'Loading...';
+      outEl.value = 'Loading...';
       try {
         const json = await fetchLyrics();
         lastJSON = json;
         rawEl.value = JSON.stringify(json, null, 2);
         lastELRC = convertToElrc(json);
-        outEl.textContent = lastELRC || '[no lyrics produced]';
+        outEl.value = lastELRC || '[no lyrics produced]';
+        document.querySelector('.tab[data-target="tab-elrc"]').click();
       } catch(e) {
-        outEl.textContent = 'Error: '+e.message;
+        outEl.value = 'Error: '+e.message;
       }
     });
 
     fetchTTMLBtn.addEventListener('click', async ()=>{
-      ttmlPanel.textContent = 'Fetching TTML...';
+      ttmlPanel.value = 'Fetching TTML...';
+      document.querySelector('.tab[data-target="tab-ttml"]').click();
       try {
         const t = await fetchTTML();
-        ttmlPanel.textContent = t.substring(0, 2000) + (t.length>2000 ? '\n\n... (truncated)': '');
+        ttmlPanel.value = t;
       } catch(e) {
-        ttmlPanel.textContent = 'Error fetching TTML: ' + e.message + '\n\nNote: endpoint may enforce CORS or require exact params.';
+        ttmlPanel.value = 'Error fetching TTML: ' + e.message + '\n\nNote: endpoint may enforce CORS or require exact params.';
       }
     });
 
@@ -375,7 +666,7 @@
         try {
           await fetchTTML();
         } catch(e) {
-          alert('Gagal fetch TTML: ' + e.message + '\nCoba cek CORS atau URL.');
+          alert('Failed to fetch TTML: ' + e.message);
           return;
         }
       }
@@ -400,7 +691,7 @@
       }
     });
 
-    // --- Test cases (same as before) ---
+    // --- Test cases ---
     const SAMPLE_1 = {
       "lyrics": [
         {
@@ -448,7 +739,7 @@
       const res2 = convertToElrc(SAMPLE_2);
       const pass2 = res2.includes('[bg:') && res2.includes('<02:03.706>');
 
-      testsEl.textContent = 'Test 1: ' + (pass1 ? 'PASS' : 'FAIL') + '\n\n' + res1 + '\n\n' +
+      testsEl.value = 'Test 1: ' + (pass1 ? 'PASS' : 'FAIL') + '\n\n' + res1 + '\n\n' +
                             'Expected 1:\n' + expect1 + '\n\n' +
                             'Test 2: ' + (pass2 ? 'PASS' : 'FAIL') + '\n\n' + res2;
     }
@@ -457,17 +748,19 @@
       rawEl.value = JSON.stringify(SAMPLE_1, null, 2);
       lastJSON = SAMPLE_1;
       lastELRC = convertToElrc(SAMPLE_1);
-      outEl.textContent = lastELRC;
+      outEl.value = lastELRC;
+      document.querySelector('.tab[data-target="tab-elrc"]').click();
     });
     document.getElementById('sample2').addEventListener('click', ()=>{
       rawEl.value = JSON.stringify(SAMPLE_2, null, 2);
       lastJSON = SAMPLE_2;
       lastELRC = convertToElrc(SAMPLE_2);
-      outEl.textContent = lastELRC;
+      outEl.value = lastELRC;
+      document.querySelector('.tab[data-target="tab-elrc"]').click();
     });
 
-    // run tests automatically on load
+    // Run tests automatically on load
     setTimeout(runTests, 200);
-  </script>
+</script>
 </body>
 </html>
