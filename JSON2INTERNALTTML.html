@@ -5,61 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple TTML Converter</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f5f5f7; }
-        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-        textarea { width: 100%; height: 300px; font-family: monospace; padding: 10px; border: 1px solid #d2d2d7; border-radius: 8px; }
-        button { padding: 12px 24px; background: #0071e3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; align-self: flex-start; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background: #f5f5f7; color: #1d1d1f; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #d2d2d7; }
+        label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; user-select: none; }
+        textarea { width: 100%; height: 350px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; padding: 15px; border: 1px solid #d2d2d7; border-radius: 12px; outline: none; resize: vertical; box-sizing: border-box; }
+        textarea:focus { border-color: #0071e3; ring: 2px solid rgba(0,113,227,0.3); }
+        button { padding: 10px 20px; background: #0071e3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
         button:hover { background: #0077ed; }
-        .output-header { display: flex; justify-content: space-between; align-items: center; }
-        pre { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #d2d2d7; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+        button.secondary { background: #e8e8ed; color: #1d1d1f; }
+        button.secondary:hover { background: #d2d2d7; }
+        .output-header { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        pre { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #d2d2d7; overflow-x: auto; white-space: pre-wrap; word-break: break-all; font-family: 'SF Mono', monospace; font-size: 13px; color: #333; }
+        .badge { background: #e8f0fe; color: #0071e3; padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Apple Music TTML Converter</h1>
-    <p>Paste your lyrics JSON below to convert it to Apple's internal TTML format.</p>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Apple TTML Converter <span class="badge">Pro</span></h1>
+    </div>
     
-    <textarea id="jsonInput" placeholder='Paste JSON here...'>
-{
+    <div class="controls">
+        <label>
+            <input type="checkbox" id="smartSplit" checked>
+            <strong>Smart Split</strong> (Detect Stanzas & Loops)
+        </label>
+        <label>
+            <input type="checkbox" id="timeSplit" checked>
+            <strong>Split on Silence</strong> (> 5 sec)
+        </label>
+    </div>
+
+    <textarea id="jsonInput" placeholder='Paste your JSON lyrics here...'>{
   "type": "Word",
   "metadata": {
-    "title": "Sample Song",
-    "language": "en-US",
+    "title": "Example Song",
     "agents": {
-      "v1": { "type": "person", "name": "Ryan Gosling", "alias": "v1" },
-      "v2": { "type": "person", "name": "Emma Stone", "alias": "v2" }
+      "v1": { "type": "person", "name": "Singer 1", "alias": "v1" }
     }
   },
   "lyrics": [
     {
-      "time": 9327,
-      "duration": 2782,
-      "text": "City of stars ",
+      "time": 1000, "duration": 2000, "text": "Hello world ",
       "element": { "singer": "v1", "songPart": "Verse" },
-      "syllabus": [
-        { "time": 9327, "duration": 500, "text": "City " },
-        { "time": 9827, "duration": 200, "text": "of " },
-        { "time": 10027, "duration": 2082, "text": "stars " }
-      ]
+      "syllabus": []
+    },
+    {
+      "time": 3000, "duration": 2000, "text": "It is me ",
+      "element": { "singer": "v1", "songPart": "Verse" },
+      "syllabus": []
+    },
+    {
+      "time": 8000, "duration": 2000, "text": "Hello world ",
+      "element": { "singer": "v1", "songPart": "Verse" },
+      "syllabus": []
+    },
+    {
+      "time": 10000, "duration": 2000, "text": "It is me ",
+      "element": { "singer": "v1", "songPart": "Verse" },
+      "syllabus": []
     }
   ]
 }</textarea>
 
-    <button onclick="handleConvert()">Convert to Apple TTML</button>
+    <div style="display:flex; gap:10px;">
+        <button onclick="handleConvert()">Convert to TTML</button>
+        <button class="secondary" onclick="clearInput()">Clear</button>
+    </div>
 
     <div class="output-header">
-        <h2>Output (TTML)</h2>
-        <button onclick="copyOutput()" style="background: #6e6e73;">Copy to Clipboard</button>
+        <h2>Output</h2>
+        <button class="secondary" onclick="copyOutput()">Copy XML</button>
     </div>
     <pre id="ttmlOutput"></pre>
 </div>
 
 <script>
+    // --- Helper: Text Normalizer for Comparison ---
+    const cleanText = (str) => {
+        if (!str) return '';
+        // Remove punctuation, extra spaces, and lowercase it
+        return str.toLowerCase().replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim();
+    };
+
     /**
-     * The core Converter Logic
+     * CORE CONVERTER LOGIC
      */
-    function convertJsonToTTML(jsonLyrics) {
+    function convertJsonToTTML(jsonLyrics, useSmartSplit, useTimeSplit) {
+        // 1. Time Formatter (Apple Standard)
         const formatTime = (ms) => {
             if (isNaN(ms) || ms < 0) ms = 0;
             const totalSeconds = ms / 1000;
@@ -70,96 +105,124 @@
             const ss = seconds.toString().padStart(2, '0');
             const mmm = milliseconds.toString().padStart(3, '0');
             if (hours > 0) {
-                const hh = hours.toString().padStart(2, '0');
-                const mm = minutes.toString().padStart(2, '0');
-                return `${hh}:${mm}:${ss}.${mmm}`;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
             }
-            const mm = minutes.toString().padStart(2, '0');
-            return `${mm}:${ss}.${mmm}`;
+            return `${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
         };
 
-        const escapeHtml = (text) => {
-            if (!text) return '';
-            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-        };
-
-        // OG Space Logic: Text inside, space outside the span
+        const escapeHtml = (text) => text ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;') : '';
+        
+        // Preserve whitespace logic
         const extractTextAndSpace = (fullText) => {
             if (!fullText) return { text: '', space: '' };
             const trimmedText = fullText.trimEnd();
-            const space = fullText.substring(trimmedText.length);
-            return { text: trimmedText, space: space };
+            return { text: trimmedText, space: fullText.substring(trimmedText.length) };
         };
 
+        // 2. Process Agents
         const finalAgents = { ...(jsonLyrics.metadata?.agents || {}) };
-        const existingAliases = new Set(Object.values(finalAgents).map(agent => agent.alias));
+        const existingAliases = new Set(Object.values(finalAgents).map(a => a.alias));
         if (jsonLyrics.lyrics) {
-            const singerAliases = new Set(jsonLyrics.lyrics.map(line => line.element?.singer).filter(Boolean));
+            const singerAliases = new Set(jsonLyrics.lyrics.map(l => l.element?.singer).filter(Boolean));
             singerAliases.forEach(alias => {
                 if (!existingAliases.has(alias)) {
                     const isGroup = alias.endsWith('000');
                     const idNum = alias.startsWith('v') ? alias.substring(1) : Object.keys(finalAgents).length + 1;
                     const agentId = alias.startsWith('v') ? alias : `v${Object.keys(finalAgents).length + 1}`;
-                    if (!finalAgents[agentId]) {
-                        finalAgents[agentId] = { type: isGroup ? 'group' : 'person', name: isGroup ? `Group ${idNum}` : `Singer ${idNum}`, alias: alias };
-                    }
+                    if (!finalAgents[agentId]) finalAgents[agentId] = { type: isGroup ? 'group' : 'person', name: isGroup ? `Group ${idNum}` : `Singer ${idNum}`, alias };
                 }
             });
         }
-
-        const findAgentId = (singerAlias) => {
-            if (!singerAlias) return null;
-            if (finalAgents[singerAlias]) return singerAlias;
-            for (const [id, data] of Object.entries(finalAgents)) {
-                if (data.alias === singerAlias) return id;
-            }
-            return singerAlias.startsWith('v') ? singerAlias : null;
+        const findAgentId = (alias) => {
+            if (!alias) return null;
+            if (finalAgents[alias]) return alias;
+            for (const [id, data] of Object.entries(finalAgents)) if (data.alias === alias) return id;
+            return alias.startsWith('v') ? alias : null;
         };
 
-        const timingMode = jsonLyrics.type || "Word";
+        // 3. Build Header
         const language = jsonLyrics.metadata?.language || "en-US";
-        
         let ttml = `<?xml version="1.0" encoding="UTF-8"?>\n<tt xmlns="http://www.w3.org/ns/ttml"\n    xmlns:tts="http://www.w3.org/ns/ttml#styling"\n    xmlns:itunes="http://itunes.apple.com/lyric-ttml-extensions"\n    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"\n    xml:lang="${language}">`;
         ttml += '\n  <head>\n    <metadata>';
-        
-        if (jsonLyrics.metadata?.title) {
-            ttml += `\n      <ttm:title>${escapeHtml(jsonLyrics.metadata.title)}</ttm:title>`;
-        }
-        for (const [agentId, agentData] of Object.entries(finalAgents)) {
-            ttml += `\n      <ttm:agent type="${escapeHtml(agentData.type || 'person')}" xml:id="${escapeHtml(agentId)}">`;
-            if (agentData.name) ttml += `\n         <ttm:name type="full">${escapeHtml(agentData.name)}</ttm:name>`;
+        if (jsonLyrics.metadata?.title) ttml += `\n      <ttm:title>${escapeHtml(jsonLyrics.metadata.title)}</ttm:title>`;
+        for (const [id, data] of Object.entries(finalAgents)) {
+            ttml += `\n      <ttm:agent type="${escapeHtml(data.type || 'person')}" xml:id="${escapeHtml(id)}">`;
+            if (data.name) ttml += `\n         <ttm:name type="full">${escapeHtml(data.name)}</ttm:name>`;
             ttml += `\n      </ttm:agent>`;
         }
         ttml += '\n    </metadata>\n  </head>';
 
+        // 4. Calculate Duration
         let totalDurationMs = 0;
         if (jsonLyrics.lyrics?.length > 0) {
-            const lastLine = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
-            totalDurationMs = lastLine.time + lastLine.duration;
+            const last = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
+            totalDurationMs = last.time + last.duration;
         }
-        let durationStr = formatTime(totalDurationMs);
-        if (jsonLyrics.metadata?.totalDuration && jsonLyrics.metadata.totalDuration.includes(':')) {
-            durationStr = jsonLyrics.metadata.totalDuration;
-        }
+        let durStr = formatTime(totalDurationMs);
+        if (jsonLyrics.metadata?.totalDuration && jsonLyrics.metadata.totalDuration.includes(':')) durStr = jsonLyrics.metadata.totalDuration;
 
-        ttml += `\n  <body dur="${durationStr}">`;
+        ttml += `\n  <body dur="${durStr}">`;
 
+        // 5. SMART GROUPING ALGORITHM
         if (jsonLyrics.lyrics?.length > 0) {
             const groups = [];
             let currentGroup = null;
-            jsonLyrics.lyrics.forEach(line => {
+
+            // Pre-scan for loops/repeated blocks to aid decision making could be added here,
+            // but strict line-by-line lookahead is usually sufficient and faster.
+
+            for (let i = 0; i < jsonLyrics.lyrics.length; i++) {
+                const line = jsonLyrics.lyrics[i];
                 let rawPart = line.element?.songPart || 'Verse';
                 const songPart = rawPart.charAt(0).toUpperCase() + rawPart.slice(1);
-                if (!currentGroup || currentGroup.songPart !== songPart) {
+                
+                // Determine if we should split
+                let shouldSplit = false;
+
+                if (!currentGroup) {
+                    shouldSplit = true;
+                } else {
+                    // Rule A: Explicit Song Part Change
+                    if (currentGroup.songPart !== songPart) shouldSplit = true;
+
+                    // Rule B: Time Gap (Silence Split)
+                    if (useTimeSplit && !shouldSplit) {
+                        const prevLine = currentGroup.lines[currentGroup.lines.length - 1];
+                        const gap = line.time - (prevLine.time + prevLine.duration);
+                        if (gap > 5000) shouldSplit = true; // 5 seconds gap
+                    }
+
+                    // Rule C: Smart Stanza/Loop Detection
+                    if (useSmartSplit && !shouldSplit && currentGroup.songPart === songPart) {
+                        // 1. Textual Reset: If this line matches the START of the current group
+                        // and the group is already decently long (>=2 lines), assume it's a new stanza (Verse 2)
+                        if (currentGroup.lines.length >= 2) {
+                            const firstLineText = cleanText(currentGroup.lines[0].text);
+                            const currentLineText = cleanText(line.text);
+                            // Only split if text is substantive (length > 3) and matches
+                            if (currentLineText.length > 3 && firstLineText === currentLineText) {
+                                shouldSplit = true;
+                            }
+                        }
+                    }
+                }
+
+                if (shouldSplit) {
                     if (currentGroup) groups.push(currentGroup);
-                    currentGroup = { songPart: songPart, lines: [line], startTime: line.time, endTime: line.time + line.duration };
+                    currentGroup = {
+                        songPart: songPart,
+                        lines: [line],
+                        startTime: line.time,
+                        endTime: line.time + line.duration
+                    };
                 } else {
                     currentGroup.lines.push(line);
                     currentGroup.endTime = Math.max(currentGroup.endTime, line.time + line.duration);
                 }
-            });
+            }
             if (currentGroup) groups.push(currentGroup);
 
+            // 6. Generate Divs
             groups.forEach(group => {
                 ttml += `\n    <div begin="${formatTime(group.startTime)}" end="${formatTime(group.endTime)}" itunes:song-part="${escapeHtml(group.songPart)}">`;
                 group.lines.forEach(line => {
@@ -167,12 +230,14 @@
                     ttml += `\n      <p begin="${formatTime(line.time)}" end="${formatTime(line.time + line.duration)}"`;
                     if (agentId) ttml += ` ttm:agent="${escapeHtml(agentId)}"`;
                     ttml += '>';
-
+                    
+                    const timingMode = jsonLyrics.type || "Word";
                     if (timingMode === 'Line') {
                         ttml += escapeHtml(line.text);
                     } else if (line.syllabus?.length > 0) {
                         const bgSyllables = line.syllabus.filter(s => s.isBackground);
                         const mainSyllables = line.syllabus.filter(s => !s.isBackground);
+                        
                         if (bgSyllables.length > 0) {
                             ttml += '<span ttm:role="x-bg">';
                             bgSyllables.forEach(syl => {
@@ -182,6 +247,7 @@
                             ttml += '</span>';
                             if (mainSyllables.length > 0) ttml += ' ';
                         }
+                        
                         mainSyllables.forEach(syl => {
                             const { text, space } = extractTextAndSpace(syl.text);
                             ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
@@ -199,23 +265,42 @@
     }
 
     /**
-     * UI Functions
+     * UI HANDLERS
      */
     function handleConvert() {
         const input = document.getElementById('jsonInput').value;
         const outputElement = document.getElementById('ttmlOutput');
+        const smartSplit = document.getElementById('smartSplit').checked;
+        const timeSplit = document.getElementById('timeSplit').checked;
+
+        if (!input.trim()) {
+            outputElement.textContent = "Please paste JSON content first.";
+            return;
+        }
+
         try {
             const json = JSON.parse(input);
-            const result = convertJsonToTTML(json);
+            const result = convertJsonToTTML(json, smartSplit, timeSplit);
             outputElement.textContent = result;
         } catch (e) {
-            outputElement.textContent = "Error parsing JSON: " + e.message;
+            outputElement.textContent = "JSON Error: " + e.message;
         }
+    }
+
+    function clearInput() {
+        document.getElementById('jsonInput').value = '';
+        document.getElementById('ttmlOutput').textContent = '';
     }
 
     function copyOutput() {
         const text = document.getElementById('ttmlOutput').textContent;
-        navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('button.secondary');
+            const originalText = btn.textContent;
+            btn.textContent = "Copied!";
+            setTimeout(() => btn.textContent = originalText, 1500);
+        });
     }
 </script>
 
