@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple TTML Converter</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f5f5f7; }
+        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        textarea { width: 100%; height: 300px; font-family: monospace; padding: 10px; border: 1px solid #d2d2d7; border-radius: 8px; }
+        button { padding: 12px 24px; background: #0071e3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; align-self: flex-start; }
+        button:hover { background: #0077ed; }
+        .output-header { display: flex; justify-content: space-between; align-items: center; }
+        pre { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #d2d2d7; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Apple Music TTML Converter</h1>
+    <p>Paste your lyrics JSON below to convert it to Apple's internal TTML format.</p>
+    
+    <textarea id="jsonInput" placeholder='Paste JSON here...'>
+{
+  "type": "Word",
+  "metadata": {
+    "title": "Sample Song",
+    "language": "en-US",
+    "agents": {
+      "v1": { "type": "person", "name": "Ryan Gosling", "alias": "v1" },
+      "v2": { "type": "person", "name": "Emma Stone", "alias": "v2" }
+    }
+  },
+  "lyrics": [
+    {
+      "time": 9327,
+      "duration": 2782,
+      "text": "City of stars ",
+      "element": { "singer": "v1", "songPart": "Verse" },
+      "syllabus": [
+        { "time": 9327, "duration": 500, "text": "City " },
+        { "time": 9827, "duration": 200, "text": "of " },
+        { "time": 10027, "duration": 2082, "text": "stars " }
+      ]
+    }
+  ]
+}</textarea>
+
+    <button onclick="handleConvert()">Convert to Apple TTML</button>
+
+    <div class="output-header">
+        <h2>Output (TTML)</h2>
+        <button onclick="copyOutput()" style="background: #6e6e73;">Copy to Clipboard</button>
+    </div>
+    <pre id="ttmlOutput"></pre>
+</div>
+
+<script>
+    /**
+     * The core Converter Logic
+     */
+    function convertJsonToTTML(jsonLyrics) {
+        const formatTime = (ms) => {
+            if (isNaN(ms) || ms < 0) ms = 0;
+            const totalSeconds = ms / 1000;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const milliseconds = Math.round((totalSeconds % 1) * 1000);
+            const ss = seconds.toString().padStart(2, '0');
+            const mmm = milliseconds.toString().padStart(3, '0');
+            if (hours > 0) {
+                const hh = hours.toString().padStart(2, '0');
+                const mm = minutes.toString().padStart(2, '0');
+                return `${hh}:${mm}:${ss}.${mmm}`;
+            }
+            const mm = minutes.toString().padStart(2, '0');
+            return `${mm}:${ss}.${mmm}`;
+        };
+
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+        };
+
+        // OG Space Logic: Text inside, space outside the span
+        const extractTextAndSpace = (fullText) => {
+            if (!fullText) return { text: '', space: '' };
+            const trimmedText = fullText.trimEnd();
+            const space = fullText.substring(trimmedText.length);
+            return { text: trimmedText, space: space };
+        };
+
+        const finalAgents = { ...(jsonLyrics.metadata?.agents || {}) };
+        const existingAliases = new Set(Object.values(finalAgents).map(agent => agent.alias));
+        if (jsonLyrics.lyrics) {
+            const singerAliases = new Set(jsonLyrics.lyrics.map(line => line.element?.singer).filter(Boolean));
+            singerAliases.forEach(alias => {
+                if (!existingAliases.has(alias)) {
+                    const isGroup = alias.endsWith('000');
+                    const idNum = alias.startsWith('v') ? alias.substring(1) : Object.keys(finalAgents).length + 1;
+                    const agentId = alias.startsWith('v') ? alias : `v${Object.keys(finalAgents).length + 1}`;
+                    if (!finalAgents[agentId]) {
+                        finalAgents[agentId] = { type: isGroup ? 'group' : 'person', name: isGroup ? `Group ${idNum}` : `Singer ${idNum}`, alias: alias };
+                    }
+                }
+            });
+        }
+
+        const findAgentId = (singerAlias) => {
+            if (!singerAlias) return null;
+            if (finalAgents[singerAlias]) return singerAlias;
+            for (const [id, data] of Object.entries(finalAgents)) {
+                if (data.alias === singerAlias) return id;
+            }
+            return singerAlias.startsWith('v') ? singerAlias : null;
+        };
+
+        const timingMode = jsonLyrics.type || "Word";
+        const language = jsonLyrics.metadata?.language || "en-US";
+        
+        let ttml = `<?xml version="1.0" encoding="UTF-8"?>\n<tt xmlns="http://www.w3.org/ns/ttml"\n    xmlns:tts="http://www.w3.org/ns/ttml#styling"\n    xmlns:itunes="http://itunes.apple.com/lyric-ttml-extensions"\n    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"\n    xml:lang="${language}">`;
+        ttml += '\n  <head>\n    <metadata>';
+        
+        if (jsonLyrics.metadata?.title) {
+            ttml += `\n      <ttm:title>${escapeHtml(jsonLyrics.metadata.title)}</ttm:title>`;
+        }
+        for (const [agentId, agentData] of Object.entries(finalAgents)) {
+            ttml += `\n      <ttm:agent type="${escapeHtml(agentData.type || 'person')}" xml:id="${escapeHtml(agentId)}">`;
+            if (agentData.name) ttml += `\n         <ttm:name type="full">${escapeHtml(agentData.name)}</ttm:name>`;
+            ttml += `\n      </ttm:agent>`;
+        }
+        ttml += '\n    </metadata>\n  </head>';
+
+        let totalDurationMs = 0;
+        if (jsonLyrics.lyrics?.length > 0) {
+            const lastLine = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
+            totalDurationMs = lastLine.time + lastLine.duration;
+        }
+        let durationStr = formatTime(totalDurationMs);
+        if (jsonLyrics.metadata?.totalDuration && jsonLyrics.metadata.totalDuration.includes(':')) {
+            durationStr = jsonLyrics.metadata.totalDuration;
+        }
+
+        ttml += `\n  <body dur="${durationStr}">`;
+
+        if (jsonLyrics.lyrics?.length > 0) {
+            const groups = [];
+            let currentGroup = null;
+            jsonLyrics.lyrics.forEach(line => {
+                let rawPart = line.element?.songPart || 'Verse';
+                const songPart = rawPart.charAt(0).toUpperCase() + rawPart.slice(1);
+                if (!currentGroup || currentGroup.songPart !== songPart) {
+                    if (currentGroup) groups.push(currentGroup);
+                    currentGroup = { songPart: songPart, lines: [line], startTime: line.time, endTime: line.time + line.duration };
+                } else {
+                    currentGroup.lines.push(line);
+                    currentGroup.endTime = Math.max(currentGroup.endTime, line.time + line.duration);
+                }
+            });
+            if (currentGroup) groups.push(currentGroup);
+
+            groups.forEach(group => {
+                ttml += `\n    <div begin="${formatTime(group.startTime)}" end="${formatTime(group.endTime)}" itunes:song-part="${escapeHtml(group.songPart)}">`;
+                group.lines.forEach(line => {
+                    const agentId = findAgentId(line.element?.singer);
+                    ttml += `\n      <p begin="${formatTime(line.time)}" end="${formatTime(line.time + line.duration)}"`;
+                    if (agentId) ttml += ` ttm:agent="${escapeHtml(agentId)}"`;
+                    ttml += '>';
+
+                    if (timingMode === 'Line') {
+                        ttml += escapeHtml(line.text);
+                    } else if (line.syllabus?.length > 0) {
+                        const bgSyllables = line.syllabus.filter(s => s.isBackground);
+                        const mainSyllables = line.syllabus.filter(s => !s.isBackground);
+                        if (bgSyllables.length > 0) {
+                            ttml += '<span ttm:role="x-bg">';
+                            bgSyllables.forEach(syl => {
+                                const { text, space } = extractTextAndSpace(syl.text);
+                                ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
+                            });
+                            ttml += '</span>';
+                            if (mainSyllables.length > 0) ttml += ' ';
+                        }
+                        mainSyllables.forEach(syl => {
+                            const { text, space } = extractTextAndSpace(syl.text);
+                            ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
+                        });
+                    } else {
+                        ttml += escapeHtml(line.text);
+                    }
+                    ttml += '</p>';
+                });
+                ttml += '\n    </div>';
+            });
+        }
+        ttml += '\n  </body>\n</tt>';
+        return ttml;
+    }
+
+    /**
+     * UI Functions
+     */
+    function handleConvert() {
+        const input = document.getElementById('jsonInput').value;
+        const outputElement = document.getElementById('ttmlOutput');
+        try {
+            const json = JSON.parse(input);
+            const result = convertJsonToTTML(json);
+            outputElement.textContent = result;
+        } catch (e) {
+            outputElement.textContent = "Error parsing JSON: " + e.message;
+        }
+    }
+
+    function copyOutput() {
+        const text = document.getElementById('ttmlOutput').textContent;
+        navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+    }
+</script>
+
+</body>
+</html>
