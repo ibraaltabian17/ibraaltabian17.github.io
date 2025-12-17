@@ -94,7 +94,7 @@
      * CORE CONVERTER LOGIC
      */
     function convertJsonToTTML(jsonLyrics, useSmartSplit, useTimeSplit) {
-        // 1. Time Formatter (Apple Standard)
+        // 1. Time Formatter
         const formatTime = (ms) => {
             if (isNaN(ms) || ms < 0) ms = 0;
             const totalSeconds = ms / 1000;
@@ -104,15 +104,13 @@
             const milliseconds = Math.round((totalSeconds % 1) * 1000);
             const ss = seconds.toString().padStart(2, '0');
             const mmm = milliseconds.toString().padStart(3, '0');
-            if (hours > 0) {
-                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
-            }
-            return `${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
+            return hours > 0 
+                ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${ss}.${mmm}` 
+                : `${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
         };
 
         const escapeHtml = (text) => text ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;') : '';
         
-        // Preserve whitespace logic
         const extractTextAndSpace = (fullText) => {
             if (!fullText) return { text: '', space: '' };
             const trimmedText = fullText.trimEnd();
@@ -163,43 +161,31 @@
 
         ttml += `\n  <body dur="${durStr}">`;
 
-        // 5. SMART GROUPING ALGORITHM
+        // 5. Grouping Logic
         if (jsonLyrics.lyrics?.length > 0) {
             const groups = [];
             let currentGroup = null;
-
-            // Pre-scan for loops/repeated blocks to aid decision making could be added here,
-            // but strict line-by-line lookahead is usually sufficient and faster.
 
             for (let i = 0; i < jsonLyrics.lyrics.length; i++) {
                 const line = jsonLyrics.lyrics[i];
                 let rawPart = line.element?.songPart || 'Verse';
                 const songPart = rawPart.charAt(0).toUpperCase() + rawPart.slice(1);
                 
-                // Determine if we should split
                 let shouldSplit = false;
 
                 if (!currentGroup) {
                     shouldSplit = true;
                 } else {
-                    // Rule A: Explicit Song Part Change
                     if (currentGroup.songPart !== songPart) shouldSplit = true;
-
-                    // Rule B: Time Gap (Silence Split)
                     if (useTimeSplit && !shouldSplit) {
                         const prevLine = currentGroup.lines[currentGroup.lines.length - 1];
                         const gap = line.time - (prevLine.time + prevLine.duration);
-                        if (gap > 5000) shouldSplit = true; // 5 seconds gap
+                        if (gap > 5000) shouldSplit = true;
                     }
-
-                    // Rule C: Smart Stanza/Loop Detection
                     if (useSmartSplit && !shouldSplit && currentGroup.songPart === songPart) {
-                        // 1. Textual Reset: If this line matches the START of the current group
-                        // and the group is already decently long (>=2 lines), assume it's a new stanza (Verse 2)
                         if (currentGroup.lines.length >= 2) {
                             const firstLineText = cleanText(currentGroup.lines[0].text);
                             const currentLineText = cleanText(line.text);
-                            // Only split if text is substantive (length > 3) and matches
                             if (currentLineText.length > 3 && firstLineText === currentLineText) {
                                 shouldSplit = true;
                             }
@@ -235,23 +221,30 @@
                     if (timingMode === 'Line') {
                         ttml += escapeHtml(line.text);
                     } else if (line.syllabus?.length > 0) {
-                        const bgSyllables = line.syllabus.filter(s => s.isBackground);
-                        const mainSyllables = line.syllabus.filter(s => !s.isBackground);
+                        // FIXED SYLLABLE PROCESSING
+                        let inBg = false;
                         
-                        if (bgSyllables.length > 0) {
-                            ttml += '<span ttm:role="x-bg">';
-                            bgSyllables.forEach(syl => {
-                                const { text, space } = extractTextAndSpace(syl.text);
-                                ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
-                            });
-                            ttml += '</span>';
-                            if (mainSyllables.length > 0) ttml += ' ';
-                        }
-                        
-                        mainSyllables.forEach(syl => {
+                        line.syllabus.forEach(syl => {
+                            const isBg = !!syl.isBackground;
+                            
+                            // Handle Mode Switching (Normal <-> Background)
+                            if (isBg !== inBg) {
+                                if (inBg) {
+                                    ttml += '</span>'; // Close BG
+                                } else {
+                                    ttml += '<span ttm:role="x-bg">'; // Open BG
+                                }
+                                inBg = isBg;
+                            }
+
                             const { text, space } = extractTextAndSpace(syl.text);
                             ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
                         });
+                        
+                        // Ensure we close any open BG tag
+                        if (inBg) {
+                            ttml += '</span>';
+                        }
                     } else {
                         ttml += escapeHtml(line.text);
                     }
@@ -263,7 +256,6 @@
         ttml += '\n  </body>\n</tt>';
         return ttml;
     }
-
     /**
      * UI HANDLERS
      */
