@@ -4,14 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kpoe → eLRC Converter</title>
-  <meta name="description" content="Convert Lyrics+ JSON to eLRC karaoke format. Material Design 3 Interface." />
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
-
     :root {
       --md-sys-color-background: #141218;
       --md-sys-color-surface: #1D1B20;
@@ -23,13 +20,8 @@
       --md-sys-color-outline: #938F99;
       --md-sys-color-on-surface: #E6E1E5;
       --md-sys-color-on-surface-variant: #CAC4D0;
-      --md-sys-color-error: #F2B8B5;
-
-      --md-sys-shape-corner-extra-small: 4px;
-      --md-sys-shape-corner-medium: 12px;
       --md-sys-shape-corner-large: 16px;
       --md-sys-shape-corner-full: 9999px;
-
       --md-ref-typeface-brand: 'Roboto', sans-serif;
     }
 
@@ -39,8 +31,7 @@
       background-color: var(--md-sys-color-background);
       color: var(--md-sys-color-on-surface);
       font-family: var(--md-ref-typeface-brand);
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       display: flex;
       justify-content: center;
       min-height: 100vh;
@@ -54,12 +45,7 @@
       gap: 24px;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 500;
-      color: var(--md-sys-color-on-surface);
-    }
+    h1 { margin: 0; font-size: 24px; font-weight: 500; }
 
     p.subtitle {
       margin: 8px 0 24px 0;
@@ -77,42 +63,10 @@
       gap: 16px;
     }
 
-    .input-group {
-      position: relative;
-      margin-bottom: 8px;
-    }
+    .input-group { position: relative; margin-bottom: 8px; }
 
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    @media(min-width: 600px) {
-      .input-row { grid-template-columns: 1fr 1fr; }
-      .input-row.with-small { grid-template-columns: 2fr 1fr; }
-    }
-
-    input, select, textarea {
-      width: 100%;
-      background: transparent;
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 4px;
-      padding: 16px 16px 16px 16px;
-      color: var(--md-sys-color-on-surface);
-      font-family: inherit;
-      font-size: 16px;
-      transition: border-color 0.2s;
-      outline: none;
-    }
-
-    input:focus, textarea:focus {
-      border-color: var(--md-sys-color-primary);
-      border-width: 2px;
-      padding: 15px 15px 15px 15px; 
-    }
-
-    label {
+    /* FIX: scope floating label only to .input-group, not all <label> elements */
+    .input-group label {
       position: absolute;
       left: 14px;
       top: 16px;
@@ -124,14 +78,38 @@
       pointer-events: none;
     }
 
-    input:focus ~ label,
-    input:not(:placeholder-shown) ~ label,
-    textarea:focus ~ label,
-    textarea:not(:placeholder-shown) ~ label {
+    .input-group input:focus ~ label,
+    .input-group input:not(:placeholder-shown) ~ label {
       top: -10px;
       font-size: 12px;
       color: var(--md-sys-color-primary);
       font-weight: 500;
+    }
+
+    .input-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+    @media(min-width: 600px) {
+      .input-row { grid-template-columns: 1fr 1fr; }
+      .input-row.with-small { grid-template-columns: 2fr 1fr; }
+    }
+
+    input, textarea {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 4px;
+      padding: 16px;
+      color: var(--md-sys-color-on-surface);
+      font-family: inherit;
+      font-size: 16px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--md-sys-color-primary);
+      border-width: 2px;
+      padding: 15px;
     }
 
     .btn-container {
@@ -154,127 +132,92 @@
       gap: 8px;
       border: none;
       transition: background 0.2s, box-shadow 0.2s;
+      text-decoration: none;
     }
 
-    .btn-primary {
-      background-color: var(--md-sys-color-primary);
-      color: var(--md-sys-color-on-primary);
-    }
-    .btn-primary:hover {
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-      opacity: 0.9;
-    }
+    .btn-primary { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
-    .btn-tonal {
-      background-color: var(--md-sys-color-secondary-container);
-      color: var(--md-sys-color-on-secondary-container);
-    }
-    .btn-tonal:hover {
-      filter: brightness(1.1);
-    }
+    .btn-tonal { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+    .btn-tonal:hover { filter: brightness(1.1); }
 
-    .btn-outlined {
-      background: transparent;
-      border: 1px solid var(--md-sys-color-outline);
-      color: var(--md-sys-color-primary);
-    }
-    .btn-outlined:hover {
-      background: rgba(208, 188, 255, 0.08);
-    }
+    .btn-outlined { background: transparent; border: 1px solid var(--md-sys-color-outline); color: var(--md-sys-color-primary); }
+    .btn-outlined:hover { background: rgba(208, 188, 255, 0.08); }
 
     .btn-icon {
-      padding: 0;
-      width: 40px;
-      height: 40px;
+      padding: 0; width: 40px; height: 40px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       background: transparent;
       color: var(--md-sys-color-on-surface-variant);
-      border: none;
+      border: none; cursor: pointer;
+    }
+    .btn-icon:hover { background-color: rgba(255,255,255,0.08); color: var(--md-sys-color-on-surface); }
+
+    /* FIX: file input hidden, wrapper uses its own non-label styling via class */
+    .file-btn-wrapper input[type="file"] { display: none; }
+
+    .chip-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--md-sys-shape-corner-full);
+      border: 1px solid var(--md-sys-color-outline);
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 14px;
       cursor: pointer;
+      user-select: none;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
-    .btn-icon:hover {
-      background-color: rgba(255,255,255,0.08);
-      color: var(--md-sys-color-on-surface);
+    .chip-check input { display: none; }
+    .chip-check.checked {
+      background: rgba(208,188,255,0.15);
+      border-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-primary);
     }
 
-    input[type="file"] {
-      display: none;
-    }
-
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid var(--md-sys-color-outline);
-      margin-bottom: 16px;
-    }
+    .tabs { display: flex; border-bottom: 1px solid var(--md-sys-color-outline); margin-bottom: 16px; }
     .tab {
       padding: 12px 16px;
       cursor: pointer;
       color: var(--md-sys-color-on-surface-variant);
-      font-weight: 500;
-      font-size: 14px;
+      font-weight: 500; font-size: 14px;
       border-bottom: 2px solid transparent;
       transition: 0.2s;
     }
-    .tab.active {
-      color: var(--md-sys-color-primary);
-      border-bottom-color: var(--md-sys-color-primary);
-    }
-
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
+    .tab.active { color: var(--md-sys-color-primary); border-bottom-color: var(--md-sys-color-primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
     .output-area {
-      width: 100%;
-      min-height: 300px;
-      background-color: #000000;
-      color: #b0b0b0;
+      width: 100%; min-height: 300px;
+      background-color: #000; color: #b0b0b0;
       font-family: 'Courier New', monospace;
       padding: 16px;
       border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.1);
-      white-space: pre-wrap;
-      overflow-y: auto;
-      font-size: 13px;
-      position: relative;
+      white-space: pre-wrap; overflow-y: auto; font-size: 13px;
     }
 
-    .output-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
+    .output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 
     .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
+      position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%);
       background-color: var(--md-sys-color-on-surface);
       color: var(--md-sys-color-surface);
-      padding: 12px 24px;
-      border-radius: 24px;
-      font-size: 14px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 1000;
+      padding: 12px 24px; border-radius: 24px;
+      font-size: 14px; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s; z-index: 1000;
     }
     .toast.show { opacity: 1; }
 
     svg { fill: currentColor; width: 20px; height: 20px; }
-
   </style>
 </head>
 <body>
-
 <div class="app-container">
 
   <div style="margin-bottom: 8px;">
@@ -293,7 +236,6 @@
         <label for="duration">Duration (ms)</label>
       </div>
     </div>
-
     <div class="input-row">
       <div class="input-group">
         <input id="artist" placeholder=" " />
@@ -308,26 +250,36 @@
     <div class="btn-container">
       <button id="fetchBtn" class="btn btn-primary">
         <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.5-9.11 0-12.58 3.51-3.47 9.21-3.47 12.72 0l2.72-2.81v7.12zM12.5 8v4.25l3.5 2.08-.72 1.28L11 13V8h1.5z"/></svg>
-        Fetch & Convert
+        Fetch &amp; Convert
       </button>
 
       <button id="fetchTTMLBtn" class="btn btn-tonal">Fetch TTML</button>
 
-      <span style="flex:1"></span> 
+      <button id="openTabBtn" class="btn btn-outlined">
+        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        Open Endpoint
+      </button>
 
-      <label class="btn btn-outlined">
-        <svg viewBox="0 0 24 24" style="margin-right:8px"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+      <div class="chip-check" id="bypassChip">
+        <input type="checkbox" id="bypassCache" />
+        Bypass Cache
+      </div>
+
+      <span style="flex:1"></span>
+
+      <!-- FIX: use div wrapper with class, not bare <label> -->
+      <div class="file-btn-wrapper btn btn-outlined" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
         Load Local JSON
         <input id="fileInput" type="file" accept=".json,application/json" />
-      </label>
+      </div>
 
-      <button id="sample1" class="btn btn-outlined small">Test 1</button>
-      <button id="sample2" class="btn btn-outlined small">Test 2</button>
+      <button id="sample1" class="btn btn-outlined">Test 1</button>
+      <button id="sample2" class="btn btn-outlined">Test 2</button>
     </div>
   </div>
 
   <div class="card">
-
     <div class="tabs">
       <div class="tab active" data-target="tab-elrc">Generated eLRC</div>
       <div class="tab" data-target="tab-json">Raw JSON</div>
@@ -338,13 +290,13 @@
     <div id="tab-elrc" class="tab-content active">
       <div class="output-header">
         <div class="btn-container">
-            <button id="downloadElrcBtn" class="btn btn-tonal">
-                <svg viewBox="0 0 24 24" style="margin-right:8px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                Download .lrc
-            </button>
+          <button id="downloadElrcBtn" class="btn btn-tonal">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Download .lrc
+          </button>
         </div>
         <button id="copyElrcBtn" class="btn btn-icon" title="Copy to Clipboard">
-            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
         </button>
       </div>
       <textarea id="out" class="output-area" readonly placeholder="Result will appear here..."></textarea>
@@ -352,9 +304,9 @@
 
     <div id="tab-json" class="tab-content">
       <div class="output-header">
-         <span style="color:var(--md-sys-color-on-surface-variant); font-size:14px">Debug view for loaded JSON</span>
-         <button id="copyJsonBtn" class="btn btn-icon" title="Copy JSON">
-            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        <span style="color:var(--md-sys-color-on-surface-variant); font-size:14px">Debug view for loaded JSON</span>
+        <button id="copyJsonBtn" class="btn btn-icon" title="Copy JSON">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
         </button>
       </div>
       <textarea id="raw" class="output-area"></textarea>
@@ -371,396 +323,320 @@
       <textarea id="tests" class="output-area" placeholder="Tests output..."></textarea>
     </div>
   </div>
-
 </div>
 
-<div id="toast" class="toast">Copied to clipboard!</div>
+<div id="toast" class="toast"></div>
 
 <script>
-    // --- UI Logic: Tabs & Toast ---
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remove active
-            tabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            // Add active
-            tab.classList.add('active');
-            document.getElementById(tab.dataset.target).classList.add('active');
-        });
+  // --- Tabs ---
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
     });
+  });
 
-    function showToast(msg) {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  async function copyToClipboard(elemId) {
+    const el = document.getElementById(elemId);
+    if (!el || !el.value) return;
+    try { await navigator.clipboard.writeText(el.value); showToast('Copied!'); }
+    catch { showToast('Failed to copy'); }
+  }
+
+  document.getElementById('copyElrcBtn').addEventListener('click', () => copyToClipboard('out'));
+  document.getElementById('copyJsonBtn').addEventListener('click', () => copyToClipboard('raw'));
+
+  // --- Bypass cache chip ---
+  const bypassChip = document.getElementById('bypassChip');
+  const bypassCheckbox = document.getElementById('bypassCache');
+  let cacheBypassCount = 0;
+
+  bypassChip.addEventListener('click', () => {
+    bypassCheckbox.checked = !bypassCheckbox.checked;
+    bypassChip.classList.toggle('checked', bypassCheckbox.checked);
+  });
+
+  // --- URL builders ---
+  const titleEl   = document.getElementById('title');
+  const artistEl  = document.getElementById('artist');
+  const durEl     = document.getElementById('duration');
+  const urlEl     = document.getElementById('url');
+  const rawEl     = document.getElementById('raw');
+  const outEl     = document.getElementById('out');
+  const testsEl   = document.getElementById('tests');
+  const ttmlPanel = document.getElementById('ttmlPanel');
+
+  function buildUrl(base) {
+    let url = urlEl.value.trim() ||
+      `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
+    if (bypassCheckbox.checked) {
+      cacheBypassCount++;
+      url += (url.includes('?') ? '&' : '?') + `_cb=${cacheBypassCount}`;
     }
+    return url;
+  }
 
-    async function copyToClipboard(elemId) {
-        const el = document.getElementById(elemId);
-        if(!el || !el.value) return;
-        try {
-            await navigator.clipboard.writeText(el.value);
-            showToast('Copied to clipboard!');
-        } catch (err) {
-            showToast('Failed to copy');
-        }
-    }
+  const lyricsBase = 'https://lyrics-plus-backend.vercel.app/v2/lyrics/get';
+  const ttmlBase   = 'https://lyrics-plus-backend.vercel.app/v1/ttml/get';
 
-    // --- Core Logic (Preserved) ---
-    const titleEl = document.getElementById('title');
-    const artistEl = document.getElementById('artist');
-    const durEl = document.getElementById('duration');
-    const urlEl = document.getElementById('url');
-    const rawEl = document.getElementById('raw');
-    const outEl = document.getElementById('out');
-    const testsEl = document.getElementById('tests');
-    const ttmlPanel = document.getElementById('ttmlPanel');
+  document.getElementById('openTabBtn').addEventListener('click', () => {
+    window.open(buildUrl(lyricsBase), '_blank');
+  });
 
-    const fileInput = document.getElementById('fileInput');
-    const fetchBtn = document.getElementById('fetchBtn');
-    const fetchTTMLBtn = document.getElementById('fetchTTMLBtn');
-    const downloadTTMLBtn = document.getElementById('downloadTTMLBtn');
-    const downloadElrcBtn = document.getElementById('downloadElrcBtn');
+  // --- Time formatter: MM:SS.xx (hundredths) ---
+  const msToTs = ms => {
+    ms = Number(ms) || 0;
+    const sec  = Math.floor(ms / 1000);
+    const hund = Math.floor((ms % 1000) / 10);
+    const min  = Math.floor(sec / 60);
+    const s    = sec % 60;
+    return `${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hund).padStart(2,'0')}`;
+  };
 
-    // Copy Buttons
-    document.getElementById('copyElrcBtn').addEventListener('click', () => copyToClipboard('out'));
-    document.getElementById('copyJsonBtn').addEventListener('click', () => copyToClipboard('raw'));
+  // FIX: always use cur.time + cur.duration as end time.
+  // Using nxt.time was wrong — syllables are self-contained spans,
+  // bleeding into silence between syllables if there's a gap.
+  function convertToElrc(json) {
+    if (!json || !Array.isArray(json.lyrics)) return '';
+    const out = [];
+    for (const line of json.lyrics) {
+      const t = msToTs(line.time);
+      const s = line.element?.singer || 'v1';
+      const sylls = Array.isArray(line.syllabus) ? line.syllabus : [];
+      const parts = [], bgParts = [];
 
-    let lastJSON = null;
-    let lastELRC = '';
-    let lastTTML = '';
-
-    const msToTs = ms => {
-      ms = Number(ms)||0;
-      const sec = Math.floor(ms/1000), hund = Math.floor((ms%1000)/10), min = Math.floor(sec/60), s = sec%60;
-      return `${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(hund).padStart(2,'0')}`;
-    };
-
-    async function fetchLyrics() {
-      const base = 'https://lyrics-plus-backend.vercel.app/v2/lyrics/get';
-      const url = urlEl.value.trim() || `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
-      const res = await fetch(url);
-      if(!res.ok) throw new Error(res.statusText);
-      return res.json();
-    }
-
-    function convertToElrc(json){
-      if(!json || !Array.isArray(json.lyrics)) return '';
-      const lines = json.lyrics;
-      const out = [];
-      for(const line of lines){
-        const t = msToTs(line.time);
-        const s = (line.element && line.element.singer) ? line.element.singer : 'v1';
-        const sylls = Array.isArray(line.syllabus) ? line.syllabus : [];
-        const parts = [], bgParts = [];
-        for(let i=0;i<sylls.length;i++){
-          const cur = sylls[i] || {};
-          const nxt = sylls[i+1] || null;
-          const st = msToTs(cur.time);
-          const ed = msToTs(nxt ? nxt.time : (cur.time + (cur.duration||0)));
-          const seg = `<${st}>${cur.text}<${ed}>`;
-          if(cur.isBackground) bgParts.push(seg); else parts.push(seg);
-        }
-        const main = `[${t}]${s}:${parts.join('')}`;
-        out.push(main);
-        if(bgParts.length) out.push(`[bg:${bgParts.join('')}]`);
+      for (const cur of sylls) {
+        const st  = msToTs(cur.time);
+        const ed  = msToTs(cur.time + (cur.duration || 0));
+        const seg = `<${st}>${cur.text}<${ed}>`;
+        if (cur.isBackground) bgParts.push(seg);
+        else parts.push(seg);
       }
-      return out.join('\n');
+
+      out.push(`[${t}]${s}:${parts.join('')}`);
+      if (bgParts.length) out.push(`[bg:${bgParts.join('')}]`);
     }
+    return out.join('\n');
+  }
 
-    // --- v1 to v2 converter ---
-    function v1Tov2(data) {
-      const groupedLyrics = [];
-      let currentGroup = null;
+  // --- v1 to v2 ---
+  function isV1Format(parsed) {
+    return parsed?.lyrics?.length > 0 && typeof parsed.lyrics[0].syllabus === 'undefined';
+  }
 
-      // Check if isLineEnding is used for grouping in Word/Syllable types
-      const usesLineEndingForGrouping = data.type !== "Line" && data.lyrics.some(segment => segment.isLineEnding === 1);
+  function v1Tov2(data) {
+    const groupedLyrics = [];
+    let currentGroup = null;
+    const usesLineEnding = data.type !== "Line" && data.lyrics.some(s => s.isLineEnding === 1);
 
-      if (data.type === "Line" || !usesLineEndingForGrouping) {
-        data.lyrics.forEach(segment => {
-          const lineItem = {
-            time: segment.time,
-            duration: segment.duration,
-            text: segment.text,
-            syllabus: segment.syllabus || [],
+    if (data.type === "Line" || !usesLineEnding) {
+      data.lyrics.forEach(segment => {
+        const lineItem = {
+          time: segment.time, duration: segment.duration, text: segment.text,
+          syllabus: segment.syllabus || [],
+          element: segment.element || { key: "", songPart: "", singer: "" }
+        };
+        if ((data.type === "Word" || data.type === "Syllable") && !lineItem.syllabus.length && lineItem.text) {
+          lineItem.syllabus = [{ time: segment.time, duration: segment.duration, text: segment.text }];
+        }
+        groupedLyrics.push(lineItem);
+      });
+    } else {
+      data.lyrics.forEach(segment => {
+        if (!currentGroup) {
+          currentGroup = {
+            time: segment.time, duration: 0, text: "", syllabus: [],
             element: segment.element || { key: "", songPart: "", singer: "" }
           };
-          if ((data.type === "Word" || data.type === "Syllable") && !lineItem.syllabus.length && lineItem.text) {
-            lineItem.syllabus = [{
-              time: segment.time,
-              duration: segment.duration,
-              text: segment.text
-            }];
-          }
-          groupedLyrics.push(lineItem);
-        });
-      } else {
-        data.lyrics.forEach(segment => {
-          if (!currentGroup) {
-            currentGroup = {
-              time: segment.time,
-              duration: 0,
-              text: "",
-              syllabus: [],
-              element: segment.element || { key: "", songPart: "", singer: "" }
-            };
-          }
+        }
+        currentGroup.text += segment.text;
+        const syllabusEntry = { time: segment.time, duration: segment.duration, text: segment.text };
+        if (segment.element?.isBackground === true) syllabusEntry.isBackground = true;
+        currentGroup.syllabus.push(syllabusEntry);
 
-          currentGroup.text += segment.text;
-
-          const syllabusEntry = {
-            time: segment.time,
-            duration: segment.duration,
-            text: segment.text
-          };
-
-          if (segment.element && segment.element.isBackground === true) {
-            syllabusEntry.isBackground = true;
-          }
-
-          currentGroup.syllabus.push(syllabusEntry);
-
-          if (segment.isLineEnding === 1) {
-            let earliestTime = Infinity;
-            let latestEndTime = 0;
-
-            currentGroup.syllabus.forEach(syllable => {
-              if (syllable.time < earliestTime) {
-                earliestTime = syllable.time;
-              }
-              const endTime = syllable.time + syllable.duration;
-              if (endTime > latestEndTime) {
-                latestEndTime = endTime;
-              }
-            });
-
-            currentGroup.time = earliestTime;
-            currentGroup.duration = latestEndTime - earliestTime;
-            currentGroup.text = currentGroup.text.trim();
-            groupedLyrics.push(currentGroup);
-            currentGroup = null;
-          }
-        });
-
-        if (currentGroup) { 
-          let earliestTime = Infinity;
-          let latestEndTime = 0;
-
-          currentGroup.syllabus.forEach(syllable => {
-            if (syllable.time < earliestTime) {
-              earliestTime = syllable.time;
-            }
-            const endTime = syllable.time + syllable.duration;
-            if (endTime > latestEndTime) {
-              latestEndTime = endTime;
-            }
+        if (segment.isLineEnding === 1) {
+          let earliestTime = Infinity, latestEndTime = 0;
+          currentGroup.syllabus.forEach(syl => {
+            if (syl.time < earliestTime) earliestTime = syl.time;
+            const end = syl.time + syl.duration;
+            if (end > latestEndTime) latestEndTime = end;
           });
-
           currentGroup.time = earliestTime;
           currentGroup.duration = latestEndTime - earliestTime;
           currentGroup.text = currentGroup.text.trim();
           groupedLyrics.push(currentGroup);
+          currentGroup = null;
         }
-      }
+      });
 
-      return {
-        type: data.type === "syllable" ? "Word" : data.type,
-        KpoeTools: '1.31R2-LPlusBcknd,' + (data.KpoeTools || 'UnknownV1'),
-        metadata: data.metadata,
-        ignoreSponsorblock: data.ignoreSponsorblock || undefined,
-        lyrics: groupedLyrics,
-        cached: data.cached || 'None'
-      };
+      if (currentGroup) {
+        let earliestTime = Infinity, latestEndTime = 0;
+        currentGroup.syllabus.forEach(syl => {
+          if (syl.time < earliestTime) earliestTime = syl.time;
+          const end = syl.time + syl.duration;
+          if (end > latestEndTime) latestEndTime = end;
+        });
+        currentGroup.time = earliestTime;
+        currentGroup.duration = latestEndTime - earliestTime;
+        currentGroup.text = currentGroup.text.trim();
+        groupedLyrics.push(currentGroup);
+      }
     }
 
-    // --- file input ---
-    fileInput.addEventListener('change', async (ev)=>{
-      const f = ev.target.files && ev.target.files[0];
-      if(!f) return;
-      try {
-        const txt = await f.text();
-        let parsedLyrics = JSON.parse(txt);
-
-        if (parsedLyrics
-            && !parsedLyrics.KpoeTools
-            && parsedLyrics.lyrics
-            && parsedLyrics.lyrics.length > 0
-            && parsedLyrics.lyrics[0].isLineEnding !== undefined) {
-          console.log("Converting older V1 JSON (no KpoeTools) to V2 format.");
-          try {
-            parsedLyrics = v1Tov2(parsedLyrics);
-          } catch(convErr) {
-            console.warn('v1->v2 conversion failed:', convErr);
-          }
-        }
-
-        lastJSON = parsedLyrics;
-        rawEl.value = JSON.stringify(parsedLyrics, null, 2);
-        lastELRC = convertToElrc(parsedLyrics);
-        outEl.value = lastELRC || '[no lyrics produced]'; // Use .value for textarea
-        ttmlPanel.value = 'No TTML fetched for local file (use Fetch TTML).';
-
-        // Auto-switch to eLRC tab
-        document.querySelector('.tab[data-target="tab-elrc"]').click();
-      } catch(e) {
-        outEl.value = 'Error parsing local JSON: ' + e.message;
-      }
-    });
-
-    // --- TTML fetch & download ---
-    async function fetchTTML() {
-      const base = 'https://lyrics-plus-backend.vercel.app/v1/ttml/get';
-      const url = urlEl.value.trim() || `${base}?title=${encodeURIComponent(titleEl.value)}&artist=${encodeURIComponent(artistEl.value)}&duration=${durEl.value}`;
-      const res = await fetch(url);
-      if(!res.ok) throw new Error(res.statusText);
-      const j = await res.json();
-      if(!j || typeof j.ttml !== 'string') throw new Error('Invalid TTML response');
-      lastTTML = j.ttml;
-      ttmlPanel.value = lastTTML;
-      return lastTTML;
-    }
-
-    async function downloadTextAsFile(text, filename, mime='text/plain;charset=utf-8') {
-      const blob = new Blob([text], {type: mime});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    fetchBtn.addEventListener('click', async ()=>{
-      outEl.value = 'Loading...';
-      try {
-        const json = await fetchLyrics();
-        lastJSON = json;
-        rawEl.value = JSON.stringify(json, null, 2);
-        lastELRC = convertToElrc(json);
-        outEl.value = lastELRC || '[no lyrics produced]';
-        document.querySelector('.tab[data-target="tab-elrc"]').click();
-      } catch(e) {
-        outEl.value = 'Error: '+e.message;
-      }
-    });
-
-    fetchTTMLBtn.addEventListener('click', async ()=>{
-      ttmlPanel.value = 'Fetching TTML...';
-      document.querySelector('.tab[data-target="tab-ttml"]').click();
-      try {
-        const t = await fetchTTML();
-        ttmlPanel.value = t;
-      } catch(e) {
-        ttmlPanel.value = 'Error fetching TTML: ' + e.message + '\n\nNote: endpoint may enforce CORS or require exact params.';
-      }
-    });
-
-    downloadTTMLBtn.addEventListener('click', async ()=>{
-      if(!lastTTML){
-        try {
-          await fetchTTML();
-        } catch(e) {
-          alert('Failed to fetch TTML: ' + e.message);
-          return;
-        }
-      }
-      if(lastTTML) {
-        downloadTextAsFile(lastTTML, (titleEl.value || 'lyrics') + '.ttml', 'application/xml;charset=utf-8');
-      } else {
-        alert('No TTML available to download.');
-      }
-    });
-
-    downloadElrcBtn.addEventListener('click', ()=>{
-      if(!lastELRC){
-        try {
-          const parsed = JSON.parse(rawEl.value);
-          lastELRC = convertToElrc(parsed);
-        } catch(e){}
-      }
-      if(lastELRC) {
-        downloadTextAsFile(lastELRC, (titleEl.value || 'lyrics') + '.lrc', 'text/plain;charset=utf-8');
-      } else {
-        alert('No eLRC content to download.');
-      }
-    });
-
-    // --- Test cases ---
-    const SAMPLE_1 = {
-      "lyrics": [
-        {
-          "time": 0,
-          "duration": 5000,
-          "text": "Example",
-          "syllabus": [
-            {"time": 0, "duration": 500, "text": "Ex"},
-            {"time": 500, "duration": 500, "text": "am"},
-            {"time": 1000, "duration": 4000, "text": "ple"}
-          ],
-          "element": {"singer":"v1"}
-        }
-      ]
+    return {
+      type: data.type === "syllable" ? "Word" : data.type,
+      KpoeTools: '1.31R2-LPlusBcknd,' + (data.KpoeTools || 'UnknownV1'),
+      metadata: data.metadata,
+      ignoreSponsorblock: data.ignoreSponsorblock || undefined,
+      lyrics: groupedLyrics,
+      cached: data.cached || 'None'
     };
+  }
 
-    const SAMPLE_2 = {
-      "lyrics": [
-        {
-          "time": 120016,
-          "duration": 2000,
-          "text": "lanwasahlan",
-          "syllabus": [
-            {"time": 120016, "duration": 359, "text": "Ah"},
-            {"time": 120375, "duration": 295, "text": "lan "},
-            {"time": 120670, "duration": 513, "text": "wa "},
-            {"time": 121183, "duration": 531, "text": "sah"},
-            {"time": 121714, "duration": 1477, "text": "lan "},
-            {"time": 121958, "duration": 392, "text": "(Ah", "isBackground": true},
-            {"time": 122350, "duration": 289, "text": "lan ", "isBackground": true},
-            {"time": 122639, "duration": 551, "text": "wa ", "isBackground": true},
-            {"time": 123190, "duration": 516, "text": "Sah", "isBackground": true},
-            {"time": 123706, "duration": 1734, "text": "lan)", "isBackground": true}
-          ],
-          "element": {"singer":"v1","songPart":"CHORUS"}
-        }
-      ]
-    };
-
-    function runTests(){
-      const res1 = convertToElrc(SAMPLE_1);
-      const expect1 = "[00:00.00]v1:<00:00.00>Ex<00:00.50><00:00.50>am<00:01.00><00:01.00>ple<00:05.00>";
-      const pass1 = res1.trim() === expect1.trim();
-
-      const res2 = convertToElrc(SAMPLE_2);
-      const pass2 = res2.includes('[bg:') && res2.includes('<02:03.706>');
-
-      testsEl.value = 'Test 1: ' + (pass1 ? 'PASS' : 'FAIL') + '\n\n' + res1 + '\n\n' +
-                            'Expected 1:\n' + expect1 + '\n\n' +
-                            'Test 2: ' + (pass2 ? 'PASS' : 'FAIL') + '\n\n' + res2;
+  function processAndDisplay(parsed) {
+    if (isV1Format(parsed)) {
+      console.log("V1 format detected. Converting to V2.");
+      try { parsed = v1Tov2(parsed); } catch(e) { console.warn('v1->v2 failed:', e); }
     }
+    lastJSON = parsed;
+    rawEl.value = JSON.stringify(parsed, null, 2);
+    lastELRC = convertToElrc(parsed);
+    outEl.value = lastELRC || '[no lyrics produced]';
+    document.querySelector('.tab[data-target="tab-elrc"]').click();
+  }
 
-    document.getElementById('sample1').addEventListener('click', ()=>{
-      rawEl.value = JSON.stringify(SAMPLE_1, null, 2);
-      lastJSON = SAMPLE_1;
-      lastELRC = convertToElrc(SAMPLE_1);
-      outEl.value = lastELRC;
-      document.querySelector('.tab[data-target="tab-elrc"]').click();
-    });
-    document.getElementById('sample2').addEventListener('click', ()=>{
-      rawEl.value = JSON.stringify(SAMPLE_2, null, 2);
-      lastJSON = SAMPLE_2;
-      lastELRC = convertToElrc(SAMPLE_2);
-      outEl.value = lastELRC;
-      document.querySelector('.tab[data-target="tab-elrc"]').click();
-    });
+  let lastJSON = null, lastELRC = '', lastTTML = '';
 
-    // Run tests automatically on load
-    setTimeout(runTests, 200);
+  // --- File input ---
+  document.getElementById('fileInput').addEventListener('change', async (ev) => {
+    const f = ev.target.files?.[0];
+    if (!f) return;
+    try {
+      processAndDisplay(JSON.parse(await f.text()));
+      ttmlPanel.value = 'No TTML for local file (use Fetch TTML).';
+    } catch(e) {
+      outEl.value = 'Error parsing local JSON: ' + e.message;
+    }
+  });
+
+  // --- Fetch lyrics ---
+  document.getElementById('fetchBtn').addEventListener('click', async () => {
+    outEl.value = 'Loading...';
+    try {
+      const res = await fetch(buildUrl(lyricsBase));
+      if (!res.ok) throw new Error(res.statusText);
+      processAndDisplay(await res.json());
+    } catch(e) { outEl.value = 'Error: ' + e.message; }
+  });
+
+  // --- Fetch TTML ---
+  async function fetchTTML() {
+    const res = await fetch(buildUrl(ttmlBase));
+    if (!res.ok) throw new Error(res.statusText);
+    const j = await res.json();
+    if (typeof j.ttml !== 'string') throw new Error('Invalid TTML response');
+    lastTTML = j.ttml;
+    ttmlPanel.value = lastTTML;
+    return lastTTML;
+  }
+
+  document.getElementById('fetchTTMLBtn').addEventListener('click', async () => {
+    ttmlPanel.value = 'Fetching TTML...';
+    document.querySelector('.tab[data-target="tab-ttml"]').click();
+    try { await fetchTTML(); }
+    catch(e) { ttmlPanel.value = 'Error: ' + e.message; }
+  });
+
+  // --- Downloads ---
+  function downloadTextAsFile(text, filename, mime = 'text/plain;charset=utf-8') {
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([text], { type: mime })),
+      download: filename
+    });
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  document.getElementById('downloadTTMLBtn').addEventListener('click', async () => {
+    if (!lastTTML) { try { await fetchTTML(); } catch(e) { alert('Failed: ' + e.message); return; } }
+    if (lastTTML) downloadTextAsFile(lastTTML, (titleEl.value || 'lyrics') + '.ttml', 'application/xml;charset=utf-8');
+  });
+
+  document.getElementById('downloadElrcBtn').addEventListener('click', () => {
+    if (!lastELRC) { try { lastELRC = convertToElrc(JSON.parse(rawEl.value)); } catch(e) {} }
+    if (lastELRC) downloadTextAsFile(lastELRC, (titleEl.value || 'lyrics') + '.lrc');
+    else alert('No eLRC content to download.');
+  });
+
+  // --- Samples & Tests ---
+  const SAMPLE_1 = {
+    lyrics: [{
+      time: 0, duration: 5000, text: "Example",
+      syllabus: [
+        { time: 0,    duration: 500,  text: "Ex"  },
+        { time: 500,  duration: 500,  text: "am"  },
+        { time: 1000, duration: 4000, text: "ple" }
+      ],
+      element: { singer: "v1" }
+    }]
+  };
+
+  const SAMPLE_2 = {
+    lyrics: [{
+      time: 120016, duration: 2000, text: "lanwasahlan",
+      syllabus: [
+        { time: 120016, duration: 359,  text: "Ah"   },
+        { time: 120375, duration: 295,  text: "lan " },
+        { time: 120670, duration: 513,  text: "wa "  },
+        { time: 121183, duration: 531,  text: "sah"  },
+        { time: 121714, duration: 1477, text: "lan " },
+        { time: 121958, duration: 392,  text: "(Ah",  isBackground: true },
+        { time: 122350, duration: 289,  text: "lan ", isBackground: true },
+        { time: 122639, duration: 551,  text: "wa ",  isBackground: true },
+        { time: 123190, duration: 516,  text: "Sah",  isBackground: true },
+        { time: 123706, duration: 1734, text: "lan)", isBackground: true }
+      ],
+      element: { singer: "v1", songPart: "CHORUS" }
+    }]
+  };
+
+  function runTests() {
+    const res1 = convertToElrc(SAMPLE_1);
+    // Each span: <start>text<start+dur>
+    const expect1 = "[00:00.00]v1:<00:00.00>Ex<00:00.50><00:00.50>am<00:01.00><00:01.00>ple<00:05.00>";
+    const pass1 = res1.trim() === expect1.trim();
+
+    const res2 = convertToElrc(SAMPLE_2);
+    // 123706+1734=125440ms → floor(125440/1000)=125s → 2m5s, hund=floor(440/10)=44 → 02:05.44
+    const pass2 = res2.includes('[bg:') && res2.includes('<02:05.44>');
+
+    testsEl.value =
+      'Test 1: ' + (pass1 ? '✅ PASS' : '❌ FAIL') + '\n\n' + res1 +
+      '\n\nExpected:\n' + expect1 +
+      '\n\n──────────────────────────\n\n' +
+      'Test 2: ' + (pass2 ? '✅ PASS' : '❌ FAIL') + '\n\n' + res2;
+  }
+
+  document.getElementById('sample1').addEventListener('click', () => {
+    rawEl.value = JSON.stringify(SAMPLE_1, null, 2);
+    lastJSON = SAMPLE_1; lastELRC = convertToElrc(SAMPLE_1); outEl.value = lastELRC;
+    document.querySelector('.tab[data-target="tab-elrc"]').click();
+  });
+  document.getElementById('sample2').addEventListener('click', () => {
+    rawEl.value = JSON.stringify(SAMPLE_2, null, 2);
+    lastJSON = SAMPLE_2; lastELRC = convertToElrc(SAMPLE_2); outEl.value = lastELRC;
+    document.querySelector('.tab[data-target="tab-elrc"]').click();
+  });
+
+  setTimeout(runTests, 200);
 </script>
 </body>
 </html>
