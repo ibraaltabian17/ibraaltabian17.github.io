@@ -10,7 +10,7 @@
         .controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #d2d2d7; }
         label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; user-select: none; }
         textarea { width: 100%; height: 350px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; padding: 15px; border: 1px solid #d2d2d7; border-radius: 12px; outline: none; resize: vertical; box-sizing: border-box; }
-        textarea:focus { border-color: #0071e3; ring: 2px solid rgba(0,113,227,0.3); }
+        textarea:focus { border-color: #0071e3; }
         button { padding: 10px 20px; background: #0071e3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
         button:hover { background: #0077ed; }
         button.secondary { background: #e8e8ed; color: #1d1d1f; }
@@ -21,54 +21,23 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>Apple TTML Converter <span class="badge">Pro</span></h1>
     </div>
-    
+
     <div class="controls">
         <label>
             <input type="checkbox" id="smartSplit" checked>
-            <strong>Smart Split</strong> (Detect Stanzas & Loops)
+            <strong>Smart Split</strong> (Detect Stanzas &amp; Loops)
         </label>
         <label>
             <input type="checkbox" id="timeSplit" checked>
-            <strong>Split on Silence</strong> (> 5 sec)
+            <strong>Split on Silence</strong> (&gt; 5 sec)
         </label>
     </div>
 
-    <textarea id="jsonInput" placeholder='Paste your JSON lyrics here...'>{
-  "type": "Word",
-  "metadata": {
-    "title": "Example Song",
-    "agents": {
-      "v1": { "type": "person", "name": "Singer 1", "alias": "v1" }
-    }
-  },
-  "lyrics": [
-    {
-      "time": 1000, "duration": 2000, "text": "Hello world ",
-      "element": { "singer": "v1", "songPart": "Verse" },
-      "syllabus": []
-    },
-    {
-      "time": 3000, "duration": 2000, "text": "It is me ",
-      "element": { "singer": "v1", "songPart": "Verse" },
-      "syllabus": []
-    },
-    {
-      "time": 8000, "duration": 2000, "text": "Hello world ",
-      "element": { "singer": "v1", "songPart": "Verse" },
-      "syllabus": []
-    },
-    {
-      "time": 10000, "duration": 2000, "text": "It is me ",
-      "element": { "singer": "v1", "songPart": "Verse" },
-      "syllabus": []
-    }
-  ]
-}</textarea>
+    <textarea id="jsonInput" placeholder="Paste your JSON lyrics here..."></textarea>
 
     <div style="display:flex; gap:10px;">
         <button onclick="handleConvert()">Convert to TTML</button>
@@ -83,18 +52,12 @@
 </div>
 
 <script>
-    // --- Helper: Text Normalizer for Comparison ---
     const cleanText = (str) => {
         if (!str) return '';
-        // Remove punctuation, extra spaces, and lowercase it
         return str.toLowerCase().replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim();
     };
 
-    /**
-     * CORE CONVERTER LOGIC
-     */
     function convertJsonToTTML(jsonLyrics, useSmartSplit, useTimeSplit) {
-        // 1. Time Formatter
         const formatTime = (ms) => {
             if (isNaN(ms) || ms < 0) ms = 0;
             const totalSeconds = ms / 1000;
@@ -104,20 +67,36 @@
             const milliseconds = Math.round((totalSeconds % 1) * 1000);
             const ss = seconds.toString().padStart(2, '0');
             const mmm = milliseconds.toString().padStart(3, '0');
-            return hours > 0 
-                ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${ss}.${mmm}` 
+            return hours > 0
+                ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`
                 : `${minutes.toString().padStart(2, '0')}:${ss}.${mmm}`;
         };
 
-        const escapeHtml = (text) => text ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;') : '';
-        
+        const escapeHtml = (text) => text
+            ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+            : '';
+
         const extractTextAndSpace = (fullText) => {
             if (!fullText) return { text: '', space: '' };
-            const trimmedText = fullText.trimEnd();
-            return { text: trimmedText, space: fullText.substring(trimmedText.length) };
+            const trimmed = fullText.trimEnd();
+            return { text: trimmed, space: fullText.substring(trimmed.length) };
         };
 
-        // 2. Process Agents
+        const songPartsArray = jsonLyrics.metadata?.songParts || [];
+        const isNewFormat = jsonLyrics.lyrics?.some(l => l.element?.songPartIndex != null);
+
+        const resolveSongPart = (element) => {
+            if (element?.songPart) {
+                const p = element.songPart;
+                return p.charAt(0).toUpperCase() + p.slice(1);
+            }
+            if (element?.songPartIndex != null && songPartsArray[element.songPartIndex]) {
+                const p = songPartsArray[element.songPartIndex].name;
+                return p.charAt(0).toUpperCase() + p.slice(1);
+            }
+            return 'Verse';
+        };
+
         const finalAgents = { ...(jsonLyrics.metadata?.agents || {}) };
         const existingAliases = new Set(Object.values(finalAgents).map(a => a.alias));
         if (jsonLyrics.lyrics) {
@@ -125,12 +104,13 @@
             singerAliases.forEach(alias => {
                 if (!existingAliases.has(alias)) {
                     const isGroup = alias.endsWith('000');
-                    const idNum = alias.startsWith('v') ? alias.substring(1) : Object.keys(finalAgents).length + 1;
                     const agentId = alias.startsWith('v') ? alias : `v${Object.keys(finalAgents).length + 1}`;
+                    const idNum = alias.startsWith('v') ? alias.substring(1) : Object.keys(finalAgents).length + 1;
                     if (!finalAgents[agentId]) finalAgents[agentId] = { type: isGroup ? 'group' : 'person', name: isGroup ? `Group ${idNum}` : `Singer ${idNum}`, alias };
                 }
             });
         }
+
         const findAgentId = (alias) => {
             if (!alias) return null;
             if (finalAgents[alias]) return alias;
@@ -138,7 +118,6 @@
             return alias.startsWith('v') ? alias : null;
         };
 
-        // 3. Build Header
         const language = jsonLyrics.metadata?.language || "en-US";
         let ttml = `<?xml version="1.0" encoding="UTF-8"?>\n<tt xmlns="http://www.w3.org/ns/ttml"\n    xmlns:tts="http://www.w3.org/ns/ttml#styling"\n    xmlns:itunes="http://itunes.apple.com/lyric-ttml-extensions"\n    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"\n    xml:lang="${language}">`;
         ttml += '\n  <head>\n    <metadata>';
@@ -150,7 +129,6 @@
         }
         ttml += '\n    </metadata>\n  </head>';
 
-        // 4. Calculate Duration
         let totalDurationMs = 0;
         if (jsonLyrics.lyrics?.length > 0) {
             const last = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
@@ -161,46 +139,37 @@
 
         ttml += `\n  <body dur="${durStr}">`;
 
-        // 5. Grouping Logic
         if (jsonLyrics.lyrics?.length > 0) {
             const groups = [];
             let currentGroup = null;
 
             for (let i = 0; i < jsonLyrics.lyrics.length; i++) {
                 const line = jsonLyrics.lyrics[i];
-                let rawPart = line.element?.songPart || 'Verse';
-                const songPart = rawPart.charAt(0).toUpperCase() + rawPart.slice(1);
-                
+                const songPart = resolveSongPart(line.element);
+                const songPartIndex = line.element?.songPartIndex ?? null;
+
                 let shouldSplit = false;
 
                 if (!currentGroup) {
                     shouldSplit = true;
+                } else if (isNewFormat) {
+                    if (songPartIndex !== currentGroup.songPartIndex) shouldSplit = true;
                 } else {
                     if (currentGroup.songPart !== songPart) shouldSplit = true;
                     if (useTimeSplit && !shouldSplit) {
                         const prevLine = currentGroup.lines[currentGroup.lines.length - 1];
-                        const gap = line.time - (prevLine.time + prevLine.duration);
-                        if (gap > 5000) shouldSplit = true;
+                        if (line.time - (prevLine.time + prevLine.duration) > 5000) shouldSplit = true;
                     }
-                    if (useSmartSplit && !shouldSplit && currentGroup.songPart === songPart) {
-                        if (currentGroup.lines.length >= 2) {
-                            const firstLineText = cleanText(currentGroup.lines[0].text);
-                            const currentLineText = cleanText(line.text);
-                            if (currentLineText.length > 3 && firstLineText === currentLineText) {
-                                shouldSplit = true;
-                            }
-                        }
+                    if (useSmartSplit && !shouldSplit && currentGroup.lines.length >= 2) {
+                        const firstLineText = cleanText(currentGroup.lines[0].text);
+                        const currentLineText = cleanText(line.text);
+                        if (currentLineText.length > 3 && firstLineText === currentLineText) shouldSplit = true;
                     }
                 }
 
                 if (shouldSplit) {
                     if (currentGroup) groups.push(currentGroup);
-                    currentGroup = {
-                        songPart: songPart,
-                        lines: [line],
-                        startTime: line.time,
-                        endTime: line.time + line.duration
-                    };
+                    currentGroup = { songPart, songPartIndex, lines: [line], startTime: line.time, endTime: line.time + line.duration };
                 } else {
                     currentGroup.lines.push(line);
                     currentGroup.endTime = Math.max(currentGroup.endTime, line.time + line.duration);
@@ -208,7 +177,6 @@
             }
             if (currentGroup) groups.push(currentGroup);
 
-            // 6. Generate Divs
             groups.forEach(group => {
                 ttml += `\n    <div begin="${formatTime(group.startTime)}" end="${formatTime(group.endTime)}" itunes:song-part="${escapeHtml(group.songPart)}">`;
                 group.lines.forEach(line => {
@@ -216,35 +184,21 @@
                     ttml += `\n      <p begin="${formatTime(line.time)}" end="${formatTime(line.time + line.duration)}"`;
                     if (agentId) ttml += ` ttm:agent="${escapeHtml(agentId)}"`;
                     ttml += '>';
-                    
-                    const timingMode = jsonLyrics.type || "Word";
-                    if (timingMode === 'Line') {
+
+                    if ((jsonLyrics.type || "Word") === 'Line') {
                         ttml += escapeHtml(line.text);
                     } else if (line.syllabus?.length > 0) {
-                        // FIXED SYLLABLE PROCESSING
                         let inBg = false;
-                        
                         line.syllabus.forEach(syl => {
                             const isBg = !!syl.isBackground;
-                            
-                            // Handle Mode Switching (Normal <-> Background)
                             if (isBg !== inBg) {
-                                if (inBg) {
-                                    ttml += '</span>'; // Close BG
-                                } else {
-                                    ttml += '<span ttm:role="x-bg">'; // Open BG
-                                }
+                                ttml += inBg ? '</span>' : '<span ttm:role="x-bg">';
                                 inBg = isBg;
                             }
-
                             const { text, space } = extractTextAndSpace(syl.text);
                             ttml += `<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${space}`;
                         });
-                        
-                        // Ensure we close any open BG tag
-                        if (inBg) {
-                            ttml += '</span>';
-                        }
+                        if (inBg) ttml += '</span>';
                     } else {
                         ttml += escapeHtml(line.text);
                     }
@@ -253,27 +207,18 @@
                 ttml += '\n    </div>';
             });
         }
+
         ttml += '\n  </body>\n</tt>';
         return ttml;
     }
-    /**
-     * UI HANDLERS
-     */
+
     function handleConvert() {
         const input = document.getElementById('jsonInput').value;
         const outputElement = document.getElementById('ttmlOutput');
-        const smartSplit = document.getElementById('smartSplit').checked;
-        const timeSplit = document.getElementById('timeSplit').checked;
-
-        if (!input.trim()) {
-            outputElement.textContent = "Please paste JSON content first.";
-            return;
-        }
-
+        if (!input.trim()) { outputElement.textContent = "Please paste JSON content first."; return; }
         try {
             const json = JSON.parse(input);
-            const result = convertJsonToTTML(json, smartSplit, timeSplit);
-            outputElement.textContent = result;
+            outputElement.textContent = convertJsonToTTML(json, document.getElementById('smartSplit').checked, document.getElementById('timeSplit').checked);
         } catch (e) {
             outputElement.textContent = "JSON Error: " + e.message;
         }
@@ -288,13 +233,12 @@
         const text = document.getElementById('ttmlOutput').textContent;
         if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
-            const btn = document.querySelector('button.secondary');
-            const originalText = btn.textContent;
+            const btn = document.querySelectorAll('button.secondary')[1];
+            const orig = btn.textContent;
             btn.textContent = "Copied!";
-            setTimeout(() => btn.textContent = originalText, 1500);
+            setTimeout(() => btn.textContent = orig, 1500);
         });
     }
 </script>
-
 </body>
 </html>
