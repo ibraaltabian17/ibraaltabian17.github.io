@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Lyrics Converter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+        }
+        .box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .box h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: #fafafa;
+        }
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-small {
+            background-color: #2ecc71;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+        }
+        .btn-small:hover {
+            background-color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>KpoeTools JSON to Lyrics Converter</h1>
+
+    <button onclick="convertJSON()">Convert JSON ➔</button>
+    <div id="errorMessage" class="error"></div>
+
+    <div class="container">
+        <!-- Input Section -->
+        <div class="box">
+            <h2>Input JSON</h2>
+            <textarea id="jsonInput" placeholder="Paste your KpoeTools JSON here..."></textarea>
+        </div>
+
+        <!-- Output Section -->
+        <div class="box">
+            <h2>
+                Formatted Output
+                <button class="btn-small" onclick="copyToClipboard()">Copy Text</button>
+            </h2>
+            <textarea id="textOutput" placeholder="Your formatted text will appear here..." readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        function convertJSON() {
+            const inputElement = document.getElementById('jsonInput');
+            const outputElement = document.getElementById('textOutput');
+            const errorElement = document.getElementById('errorMessage');
+            
+            errorElement.style.display = 'none';
+            outputElement.value = '';
+
+            const inputStr = inputElement.value.trim();
+            if (!inputStr) {
+                showError("Please paste JSON data first.");
+                return;
+            }
+
+            try {
+                const data = JSON.parse(inputStr);
+                let outputLines = [];
+
+                // 1. Process Agents
+                const agents = (data.metadata && data.metadata.agents) ? data.metadata.agents : {};
+                for (const [alias, agentInfo] of Object.entries(agents)) {
+                    const type = agentInfo.type || "person";
+                    const name = agentInfo.name || alias;
+                    outputLines.push(`[agent:${type}=${alias}:${name}]`);
+                }
+                
+                outputLines.push(""); // Empty line after agents
+
+                // 2. Process Song Parts (Section Mapping & Numbering)
+                const songParts = (data.metadata && data.metadata.songParts) ? data.metadata.songParts : [];
+                
+                // Count occurrences of each part name to decide if numbering is needed
+                const totalCounts = {};
+                songParts.forEach(part => {
+                    const name = part.name || "Unknown";
+                    totalCounts[name] = (totalCounts[name] || 0) + 1;
+                });
+
+                const partCounters = {};
+                const partDisplayNames = {};
+                
+                songParts.forEach((part, idx) => {
+                    const name = part.name || "Unknown";
+                    partCounters[name] = (partCounters[name] || 0) + 1;
+                    
+                    // Add numbering if the part exists more than once (e.g., Verse 1, Verse 2)
+                    if (totalCounts[name] > 1) {
+                        partDisplayNames[idx] = `${name} ${partCounters[name]}`;
+                    } else {
+                        partDisplayNames[idx] = name;
+                    }
+                });
+
+                // 3. Process Lyrics
+                const lyrics = data.lyrics || [];
+                let currentPartIdx = -1;
+
+                lyrics.forEach(line => {
+                    const element = line.element || {};
+                    const partIdx = element.songPartIndex;
+                    const singer = element.singer || "v1";
+                    const text = line.text || "";
+
+                    // Check if we shifted to a new section
+                    if (partIdx !== currentPartIdx) {
+                        if (currentPartIdx !== -1) {
+                            outputLines.push(""); // Add blank line between sections
+                        }
+                        const partName = partDisplayNames[partIdx] || `Section ${partIdx}`;
+                        outputLines.push(`#${partName}`);
+                        currentPartIdx = partIdx;
+                    }
+
+                    // Add the lyric line
+                    outputLines.push(`${singer}:${text}`);
+                });
+
+                // Update Output text area
+                outputElement.value = outputLines.join('\n');
+
+            } catch (error) {
+                showError("Invalid JSON format! Please check your input. Error details: " + error.message);
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.innerText = message;
+            errorElement.style.display = 'block';
+        }
+
+        function copyToClipboard() {
+            const outputElement = document.getElementById('textOutput');
+            if (!outputElement.value) return;
+
+            outputElement.select();
+            outputElement.setSelectionRange(0, 99999); // For mobile devices
+
+            navigator.clipboard.writeText(outputElement.value).then(() => {
+                alert("Copied to clipboard!");
+            }).catch(err => {
+                alert("Failed to copy: " + err);
+            });
+        }
+    </script>
+</body>
+</html>
