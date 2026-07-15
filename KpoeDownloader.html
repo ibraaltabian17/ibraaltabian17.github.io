@@ -485,186 +485,256 @@
 
   // --- Local JSON -> TTML conversion (ported from ttml_parser.js, no server needed) ---
   function convertJsonToTTML(jsonLyrics) {
-    const formatTime = (ms) => {
-      if (isNaN(ms) || ms < 0) ms = 0;
-      const roundedMs = Math.round(ms);
-      const m = Math.floor(roundedMs / 60000);
-      const s = Math.floor((roundedMs % 60000) / 1000);
-      const msPart = roundedMs % 1000;
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${msPart.toString().padStart(3, '0')}`;
-    };
-
-    const escapeHtml = (text) => {
-      if (!text) return '';
-      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-    };
-
-    const extractTextAndSpace = (fullText) => {
-      if (!fullText) return { pre: '', text: '', post: '' };
-      const match = fullText.match(/^(\s*)([\s\S]*?)(\s*)$/);
-      return { pre: match[1] || '', text: match[2] || '', post: match[3] || '' };
-    };
-
-    const metadata = jsonLyrics.metadata || {};
-    const songPartsArray = metadata.songParts || [];
-    const isNewFormat = jsonLyrics.lyrics?.some(l => l.element?.songPartIndex != null);
-
-    const agents = {};
-    if (metadata.agents) {
-      for (const [key, val] of Object.entries(metadata.agents)) agents[key] = { ...val };
-    }
-    if (jsonLyrics.lyrics) {
-      const usedSingers = new Set(jsonLyrics.lyrics.map(l => l.element?.singer).filter(Boolean));
-      for (const alias of usedSingers) {
-        const existingId = Object.keys(agents).find(id => agents[id].alias === alias || id === alias);
-        if (!existingId) agents[alias] = { type: 'person', name: '', alias };
-      }
-    }
-
-    const findAgentId = (alias) => {
-      if (!alias) return null;
-      return Object.keys(agents).find(key => agents[key].alias === alias || key === alias) || alias;
-    };
-
-    const resolveSongPart = (element) => {
-      if (element?.songPart) {
-        const p = element.songPart;
-        return p.charAt(0).toUpperCase() + p.slice(1);
-      }
-      if (element?.songPartIndex != null && songPartsArray[element.songPartIndex]) {
-        const p = songPartsArray[element.songPartIndex].name;
-        return p.charAt(0).toUpperCase() + p.slice(1);
-      }
-      return '';
-    };
-
-    const timingMode = jsonLyrics.type || "Word";
-    const lang = metadata.language || "en";
-
-    let ttml = '<?xml version="1.0" encoding="UTF-8"?>';
-    ttml += `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:lyricsplus="http://lyricsplus.prjktla.my.id/lyric-ttml-internal" itunes:timing="${escapeHtml(timingMode)}" xml:lang="${escapeHtml(lang)}">`;
-    ttml += '<head><metadata>';
-    if (metadata.title) ttml += `<ttm:title>${escapeHtml(metadata.title)}</ttm:title>`;
-
-    for (const [id, agent] of Object.entries(agents)) {
-      const type = agent.type || 'person';
-      if (agent.name) {
-        ttml += `<ttm:agent type="${escapeHtml(type)}" xml:id="${escapeHtml(id)}"><ttm:name>${escapeHtml(agent.name)}</ttm:name></ttm:agent>`;
-      } else {
-        ttml += `<ttm:agent type="${escapeHtml(type)}" xml:id="${escapeHtml(id)}"/>`;
-      }
-    }
-
-    const leadingSilence = metadata.leadingSilence || "0.000";
-    ttml += `<iTunesMetadata leadingSilence="${escapeHtml(leadingSilence)}">`;
-    if (Array.isArray(metadata.songWriters) && metadata.songWriters.length > 0) {
-      ttml += '<songwriters>';
-      metadata.songWriters.forEach(sw => { ttml += `<songwriter>${escapeHtml(sw)}</songwriter>`; });
-      ttml += '</songwriters>';
-    }
-
-    const curator = metadata.curator || '';
-    if (curator) {
-      ttml += `<lyricsplus:curator>${escapeHtml(curator)}</lyricsplus:curator>`;
-    }
-    const kpoeTools = metadata.kpoeTools || '';
-    if (kpoeTools) {
-      ttml += `<lyricsplus:kpoeTools>${escapeHtml(kpoeTools)}</lyricsplus:kpoeTools>`;
-    }
-    ttml += '</iTunesMetadata></metadata></head>';
-
-    let totalDur = metadata.totalDuration;
-    if (!totalDur && jsonLyrics.lyrics?.length > 0) {
-      const lastLine = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
-      totalDur = formatTime(lastLine.time + lastLine.duration);
-    } else if (!totalDur) {
-      totalDur = "00:00.000";
-    }
-
-    ttml += `<body dur="${escapeHtml(totalDur)}">`;
-
-    if (jsonLyrics.lyrics?.length > 0) {
-      let currentLines = [];
-      let currentSongPart = null;
-      let currentSongPartIndex = null;
-
-      const flushDiv = () => {
-        if (currentLines.length === 0) return;
-        const divStart = currentLines[0].time;
-        const lastLine = currentLines[currentLines.length - 1];
-        const divEnd = lastLine.time + lastLine.duration;
-
-        ttml += `<div begin="${formatTime(divStart)}" end="${formatTime(divEnd)}"`;
-        if (currentSongPart) ttml += ` itunes:song-part="${escapeHtml(currentSongPart)}"`;
-        ttml += '>';
-
-        for (const line of currentLines) {
-          const agentId = findAgentId(line.element?.singer);
-          const key = line.element?.key;
-          ttml += `<p begin="${formatTime(line.time)}" end="${formatTime(line.time + line.duration)}"`;
-          if (key) ttml += ` itunes:key="${escapeHtml(key)}"`;
-          if (agentId) ttml += ` ttm:agent="${escapeHtml(agentId)}"`;
-          ttml += '>';
-
-          if (timingMode === 'Word' && line.syllabus?.length > 0) {
-            let bgBuffer = [];
-            const flushBg = () => {
-              if (bgBuffer.length === 0) return;
-              ttml += '<span ttm:role="x-bg">';
-              bgBuffer.forEach(s => {
-                const { pre, text, post } = extractTextAndSpace(s.text);
-                ttml += `${pre}<span begin="${formatTime(s.time)}" end="${formatTime(s.time + s.duration)}">${escapeHtml(text)}</span>${post}`;
-              });
-              ttml += '</span>';
-              bgBuffer = [];
-            };
-            for (const syl of line.syllabus) {
-              if (syl.isBackground) {
-                bgBuffer.push(syl);
-              } else {
-                flushBg();
-                const { pre, text, post } = extractTextAndSpace(syl.text);
-                ttml += `${pre}<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${post}`;
-              }
-            }
-            flushBg();
-          } else {
-            ttml += escapeHtml(line.text);
-          }
-          ttml += '</p>';
-        }
-        ttml += '</div>';
-      };
-
-      for (const line of jsonLyrics.lyrics) {
-        const songPart = resolveSongPart(line.element);
-        const songPartIndex = line.element?.songPartIndex ?? null;
-
-        if (currentSongPart === null) {
-          currentSongPart = songPart;
-          currentSongPartIndex = songPartIndex;
-        }
-
-        const shouldSplit = isNewFormat
-          ? songPartIndex !== currentSongPartIndex
-          : songPart !== currentSongPart;
-
-        if (shouldSplit && currentLines.length > 0) {
-          flushDiv();
-          currentLines = [];
-          currentSongPart = songPart;
-          currentSongPartIndex = songPartIndex;
-        }
-
-        currentLines.push(line);
-      }
-      flushDiv();
-    }
-
-    ttml += '</body></tt>';
-    return ttml;
+  const formatTime = (ms) => {
+    if (isNaN(ms) || ms < 0) ms = 0;
+    const roundedMs = Math.round(ms);
+    const m = Math.floor(roundedMs / 60000);
+    const s = Math.floor((roundedMs % 60000) / 1000);
+    const msPart = roundedMs % 1000;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${msPart.toString().padStart(3, '0')}`;
+  };
+ 
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  };
+ 
+  const extractTextAndSpace = (fullText) => {
+    if (!fullText) return { pre: '', text: '', post: '' };
+    const match = fullText.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    return { pre: match[1] || '', text: match[2] || '', post: match[3] || '' };
+  };
+ 
+  const metadata = jsonLyrics.metadata || {};
+  const songPartsArray = metadata.songParts || [];
+  const isNewFormat = jsonLyrics.lyrics?.some(l => l.element?.songPartIndex != null);
+ 
+  const agents = {};
+  if (metadata.agents) {
+    for (const [key, val] of Object.entries(metadata.agents)) agents[key] = { ...val };
   }
-
+  if (jsonLyrics.lyrics) {
+    const usedSingers = new Set(jsonLyrics.lyrics.map(l => l.element?.singer).filter(Boolean));
+    for (const alias of usedSingers) {
+      const existingId = Object.keys(agents).find(id => agents[id].alias === alias || id === alias);
+      if (!existingId) agents[alias] = { type: 'person', name: '', alias };
+    }
+  }
+ 
+  const timingMode = jsonLyrics.type || "Word";
+  const docLang = metadata.language || "en";
+ 
+  const findAgentId = (alias) => {
+    if (!alias) return null;
+    return Object.keys(agents).find(key => agents[key].alias === alias || key === alias) || alias;
+  };
+ 
+  const findSongPartEntry = (songPartIndex) => {
+    if (songPartIndex == null) return null;
+    return songPartsArray.find(sp => sp.divIndex === songPartIndex) || songPartsArray[songPartIndex] || null;
+  };
+ 
+  const resolveSongPart = (element) => {
+    if (element?.songPart) {
+      const p = element.songPart;
+      return p.charAt(0).toUpperCase() + p.slice(1);
+    }
+    const entry = findSongPartEntry(element?.songPartIndex);
+    if (entry && entry.name) {
+      return entry.name.charAt(0).toUpperCase() + entry.name.slice(1);
+    }
+    return '';
+  };
+ 
+  let ttml = '<?xml version="1.0" encoding="UTF-8"?>';
+  ttml += `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:lyricsplus="http://lyricsplus.prjktla.my.id/lyric-ttml-internal" itunes:timing="${escapeHtml(timingMode)}" xml:lang="${escapeHtml(docLang)}">`;
+  ttml += '<head><metadata>';
+  if (metadata.title) ttml += `<ttm:title>${escapeHtml(metadata.title)}</ttm:title>`;
+ 
+  for (const [id, agent] of Object.entries(agents)) {
+    const type = agent.type || 'person';
+    if (agent.name) {
+      ttml += `<ttm:agent type="${escapeHtml(type)}" xml:id="${escapeHtml(id)}"><ttm:name>${escapeHtml(agent.name)}</ttm:name></ttm:agent>`;
+    } else {
+      ttml += `<ttm:agent type="${escapeHtml(type)}" xml:id="${escapeHtml(id)}"/>`;
+    }
+  }
+ 
+  const leadingSilence = metadata.leadingSilence || "0.000";
+  ttml += `<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal" leadingSilence="${escapeHtml(leadingSilence)}">`;
+ 
+  const translationsByLang = {};
+  const transliterationsByLang = {};
+  if (jsonLyrics.lyrics) {
+    for (const line of jsonLyrics.lyrics) {
+      const key = line.element?.key;
+      if (!key) continue;
+      if (line.translation && line.translation.text) {
+        const tlLang = line.translation.lang || docLang;
+        if (!translationsByLang[tlLang]) translationsByLang[tlLang] = [];
+        translationsByLang[tlLang].push({ key, text: line.translation.text });
+      }
+      if (line.transliteration) {
+        const tLang = line.transliteration.lang || '';
+        if (!transliterationsByLang[tLang]) transliterationsByLang[tLang] = [];
+        transliterationsByLang[tLang].push({ key, translit: line.transliteration });
+      }
+    }
+  }
+ 
+  if (Object.keys(translationsByLang).length > 0) {
+    ttml += '<translations>';
+    for (const [tLang, entries] of Object.entries(translationsByLang)) {
+      ttml += `<translation type="subtitle" xml:lang="${escapeHtml(tLang)}">`;
+      for (const entry of entries) {
+        ttml += `<text for="${escapeHtml(entry.key)}">${escapeHtml(entry.text)}</text>`;
+      }
+      ttml += '</translation>';
+    }
+    ttml += '</translations>';
+  }
+ 
+  if (Array.isArray(metadata.songWriters) && metadata.songWriters.length > 0) {
+    ttml += '<songwriters>';
+    metadata.songWriters.forEach(sw => { ttml += `<songwriter>${escapeHtml(sw)}</songwriter>`; });
+    ttml += '</songwriters>';
+  }
+ 
+  const audioList = metadata.audio || [];
+  for (const audioEntry of audioList) {
+    if (!audioEntry || (audioEntry.lyricOffset == null && !audioEntry.role)) continue;
+    ttml += '<audio';
+    if (audioEntry.lyricOffset != null) ttml += ` lyricOffset="${escapeHtml(String(audioEntry.lyricOffset))}"`;
+    if (audioEntry.role) ttml += ` role="${escapeHtml(audioEntry.role)}"`;
+    ttml += '/>';
+  }
+ 
+  if (Object.keys(transliterationsByLang).length > 0) {
+    ttml += '<transliterations>';
+    for (const [tLang, entries] of Object.entries(transliterationsByLang)) {
+      ttml += `<transliteration xml:lang="${escapeHtml(tLang)}">`;
+      for (const entry of entries) {
+        const translit = entry.translit;
+        ttml += `<text for="${escapeHtml(entry.key)}">`;
+        if (Array.isArray(translit.syllabus) && translit.syllabus.length > 0) {
+          translit.syllabus.forEach(syl => {
+            const { pre, text, post } = extractTextAndSpace(syl.text);
+            ttml += `${pre}<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${post}`;
+          });
+        } else {
+          ttml += escapeHtml(translit.text || '');
+        }
+        ttml += '</text>';
+      }
+      ttml += '</transliteration>';
+    }
+    ttml += '</transliterations>';
+  }
+ 
+  const curator = metadata.curator || '';
+  if (curator) {
+    ttml += `<lyricsplus:curator>${escapeHtml(curator)}</lyricsplus:curator>`;
+  }
+  const kpoeTools = metadata.kpoeTools || '';
+  if (kpoeTools) {
+    ttml += `<lyricsplus:kpoeTools>${escapeHtml(kpoeTools)}</lyricsplus:kpoeTools>`;
+  }
+  ttml += '</iTunesMetadata></metadata></head>';
+ 
+  let totalDur = metadata.totalDuration;
+  if (!totalDur && jsonLyrics.lyrics?.length > 0) {
+    const lastLine = jsonLyrics.lyrics[jsonLyrics.lyrics.length - 1];
+    totalDur = formatTime(lastLine.time + lastLine.duration);
+  } else if (!totalDur) {
+    totalDur = "00:00.000";
+  }
+ 
+  ttml += `<body dur="${escapeHtml(totalDur)}">`;
+ 
+  if (jsonLyrics.lyrics?.length > 0) {
+    let currentLines = [];
+    let currentSongPart = null;
+    let currentSongPartIndex = null;
+ 
+    const flushDiv = () => {
+      if (currentLines.length === 0) return;
+      const partEntry = findSongPartEntry(currentSongPartIndex);
+      const lastLine = currentLines[currentLines.length - 1];
+      const divStart = (partEntry && partEntry.time) || currentLines[0].time;
+      const divEnd = (partEntry && partEntry.time && partEntry.duration)
+        ? partEntry.time + partEntry.duration
+        : lastLine.time + lastLine.duration;
+ 
+      ttml += `<div begin="${formatTime(divStart)}" end="${formatTime(divEnd)}"`;
+      if (currentSongPart) ttml += ` itunes:songPart="${escapeHtml(currentSongPart)}"`;
+      ttml += '>';
+ 
+      for (const line of currentLines) {
+        const agentId = findAgentId(line.element?.singer);
+        const key = line.element?.key;
+        ttml += `<p begin="${formatTime(line.time)}" end="${formatTime(line.time + line.duration)}"`;
+        if (key) ttml += ` itunes:key="${escapeHtml(key)}"`;
+        if (agentId) ttml += ` ttm:agent="${escapeHtml(agentId)}"`;
+        ttml += '>';
+ 
+        if (timingMode === 'Word' && line.syllabus?.length > 0 && !line.wordSyncFallback) {
+          let bgBuffer = [];
+          const flushBg = () => {
+            if (bgBuffer.length === 0) return;
+            ttml += '<span ttm:role="x-bg">';
+            bgBuffer.forEach(s => {
+              const { pre, text, post } = extractTextAndSpace(s.text);
+              ttml += `${pre}<span begin="${formatTime(s.time)}" end="${formatTime(s.time + s.duration)}">${escapeHtml(text)}</span>${post}`;
+            });
+            ttml += '</span>';
+            bgBuffer = [];
+          };
+          for (const syl of line.syllabus) {
+            if (syl.isBackground) {
+              bgBuffer.push(syl);
+            } else {
+              flushBg();
+              const { pre, text, post } = extractTextAndSpace(syl.text);
+              ttml += `${pre}<span begin="${formatTime(syl.time)}" end="${formatTime(syl.time + syl.duration)}">${escapeHtml(text)}</span>${post}`;
+            }
+          }
+          flushBg();
+        } else {
+          ttml += escapeHtml(line.text);
+        }
+        ttml += '</p>';
+      }
+      ttml += '</div>';
+    };
+ 
+    for (const line of jsonLyrics.lyrics) {
+      const songPart = resolveSongPart(line.element);
+      const songPartIndex = line.element?.songPartIndex ?? null;
+ 
+      if (currentSongPart === null) {
+        currentSongPart = songPart;
+        currentSongPartIndex = songPartIndex;
+      }
+ 
+      const shouldSplit = isNewFormat
+        ? songPartIndex !== currentSongPartIndex
+        : songPart !== currentSongPart;
+ 
+      if (shouldSplit && currentLines.length > 0) {
+        flushDiv();
+        currentLines = [];
+        currentSongPart = songPart;
+        currentSongPartIndex = songPartIndex;
+      }
+ 
+      currentLines.push(line);
+    }
+    flushDiv();
+  }
+ 
+  ttml += '</body></tt>';
+  return ttml;
+}
   // --- v1 to v2 ---
   function isV1Format(parsed) {
     return parsed?.lyrics?.length > 0 && typeof parsed.lyrics[0].syllabus === 'undefined';
