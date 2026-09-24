@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON to Lyrics Converter</title>
@@ -91,11 +89,69 @@
             margin-top: 10px;
             display: none;
         }
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .option-item label {
+            cursor: pointer;
+            user-select: none;
+        }
+        .option-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .option-item.sub {
+            padding-left: 12px;
+            border-left: 2px solid #ddd;
+        }
+        .option-item.number {
+            gap: 4px;
+        }
+        .option-item.number input[type="number"] {
+            width: 60px;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
     <h1>KpoeTools JSON to Lyrics Converter</h1>
+
+    <div class="options">
+        <div class="option-item">
+            <input type="checkbox" id="syllableToggle" onchange="onSyllableToggleChange()">
+            <label for="syllableToggle">Enable syllable split</label>
+        </div>
+        <div class="option-item sub">
+            <input type="checkbox" id="syncModeToggle" disabled="" onchange="convertJSON()">
+            <label for="syncModeToggle">Sync mode (resync helper)</label>
+        </div>
+        <div class="option-item sub number">
+            <label for="gapThreshold">Gap threshold (ms):</label>
+            <input type="number" id="gapThreshold" value="5" min="0" onchange="convertJSON()">
+        </div>
+    </div>
 
     <button onclick="convertJSON()">Convert JSON ➔</button>
     <div id="errorMessage" class="error"></div>
@@ -113,22 +169,104 @@
                 Formatted Output
                 <button class="btn-small" onclick="copyToClipboard()">Copy Text</button>
             </h2>
-            <textarea id="textOutput" placeholder="Your formatted text will appear here..." readonly></textarea>
+            <textarea id="textOutput" placeholder="Your formatted text will appear here..." readonly=""></textarea>
         </div>
     </div>
 
     <script>
+        function onSyllableToggleChange() {
+            const syllableEnabled = document.getElementById('syllableToggle').checked;
+            const syncToggle = document.getElementById('syncModeToggle');
+            syncToggle.disabled = !syllableEnabled;
+            if (!syllableEnabled) {
+                syncToggle.checked = false;
+            }
+            convertJSON();
+        }
+
+        // Build the text for a single lyric line's syllables, following the
+        // Kmake syllable-split syntax:
+        //   - "]" separates syllables within the same word
+        //   - a space (not "]") separates the last syllable of a word from
+        //     the next word
+        //   - the end of the line has no trailing separator at all
+        //   - in sync mode, a gap (+/- threshold ms) between the previous
+        //     syllable's end and the next syllable's start doubles the
+        //     separator: "]" -> "]]", or a single trailing space -> two
+        //     trailing spaces. A background/non-background switch between
+        //     consecutive syllables also doubles the separator.
+        function buildSyllableText(syllabus, syncMode, gapThresholdMs) {
+            if (!Array.isArray(syllabus) || syllabus.length === 0) return "";
+
+            let result = "";
+
+            for (let i = 0; i < syllabus.length; i++) {
+                const syl = syllabus[i];
+                const rawText = syl.text || "";
+                const isLast = i === syllabus.length - 1;
+
+                // Does this syllable's raw text end with a space? That marks
+                // the end of a word (word boundary), as opposed to a mid-word
+                // syllable break (which uses "]").
+                const endsWithSpace = /\s$/.test(rawText);
+                const trimmedText = endsWithSpace ? rawText.replace(/\s+$/, "") : rawText;
+
+                result += trimmedText;
+
+                if (isLast) {
+                    // End of line: no trailing separator at all.
+                    continue;
+                }
+
+                const nextSyl = syllabus[i + 1];
+
+                // Determine base separator: "]" for mid-word, " " for word end.
+                let separator = endsWithSpace ? " " : "]";
+
+                if (syncMode) {
+                    let doubled = false;
+
+                    // Gap check: compare end of current syllable to start of next.
+                    if (typeof syl.time === "number" && typeof syl.duration === "number" &&
+                        typeof nextSyl.time === "number") {
+                        const currentEnd = syl.time + syl.duration;
+                        const gap = nextSyl.time - currentEnd;
+                        if (Math.abs(gap) > gapThresholdMs) {
+                            doubled = true;
+                        }
+                    }
+
+                    // Background / non-background switch also doubles separator.
+                    const curBg = !!syl.isBackground;
+                    const nextBg = !!nextSyl.isBackground;
+                    if (curBg !== nextBg) {
+                        doubled = true;
+                    }
+
+                    if (doubled) {
+                        separator = separator === "]" ? "]]" : "  ";
+                    }
+                }
+
+                result += separator;
+            }
+
+            return result;
+        }
+
         function convertJSON() {
             const inputElement = document.getElementById('jsonInput');
             const outputElement = document.getElementById('textOutput');
             const errorElement = document.getElementById('errorMessage');
-            
+            const syllableEnabled = document.getElementById('syllableToggle').checked;
+            const syncMode = document.getElementById('syncModeToggle').checked;
+            const gapThreshold = parseFloat(document.getElementById('gapThreshold').value) || 0;
+
             errorElement.style.display = 'none';
             outputElement.value = '';
 
             const inputStr = inputElement.value.trim();
             if (!inputStr) {
-                showError("Please paste JSON data first.");
                 return;
             }
 
@@ -146,29 +284,13 @@
                 
                 outputLines.push(""); // Empty line after agents
 
-                // 2. Process Song Parts (Section Mapping & Numbering)
+                // 2. Process Song Parts (Section Mapping, no numbering)
                 const songParts = (data.metadata && data.metadata.songParts) ? data.metadata.songParts : [];
-                
-                // Count occurrences of each part name to decide if numbering is needed
-                const totalCounts = {};
-                songParts.forEach(part => {
-                    const name = part.name || "Unknown";
-                    totalCounts[name] = (totalCounts[name] || 0) + 1;
-                });
 
-                const partCounters = {};
                 const partDisplayNames = {};
-                
                 songParts.forEach((part, idx) => {
                     const name = part.name || "Unknown";
-                    partCounters[name] = (partCounters[name] || 0) + 1;
-                    
-                    // Add numbering if the part exists more than once (e.g., Verse 1, Verse 2)
-                    if (totalCounts[name] > 1) {
-                        partDisplayNames[idx] = `${name} ${partCounters[name]}`;
-                    } else {
-                        partDisplayNames[idx] = name;
-                    }
+                    partDisplayNames[idx] = name;
                 });
 
                 // 3. Process Lyrics
@@ -191,8 +313,13 @@
                         currentPartIdx = partIdx;
                     }
 
-                    // Add the lyric line
-                    outputLines.push(`${singer}:${text}`);
+                    // Add the lyric line, either plain text or syllable-split
+                    if (syllableEnabled && Array.isArray(line.syllabus) && line.syllabus.length > 0) {
+                        const syllableText = buildSyllableText(line.syllabus, syncMode, gapThreshold);
+                        outputLines.push(`${singer}:${syllableText}`);
+                    } else {
+                        outputLines.push(`${singer}:${text}`);
+                    }
                 });
 
                 // Update Output text area
@@ -223,5 +350,6 @@
             });
         }
     </script>
-</body>
-</html>
+
+
+</body></html>
